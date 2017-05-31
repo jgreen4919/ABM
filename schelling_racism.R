@@ -1,4 +1,5 @@
 #Schelling Segregation Model with uneven preferences
+# Based on David Zimmerman's example at: https://www.r-bloggers.com/agent-based-modelling-with-data-table-or-how-to-model-urban-migration-with-r/
 
 initiateSchelling <- function(dimensions = c(10, 10), n_races = 4, perc_empty = 0.2, perc_maj = .75){
   require(data.table)
