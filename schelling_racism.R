@@ -4,8 +4,8 @@
 initiateSchelling <- function(dimensions = c(10, 10), n_races = 4, perc_empty = 0.2, perc_maj = .75){
   require(data.table)
   # create "races" based on colours
-  races <- colours()[1:n_races]
-  dom_race <- races[1]
+  dims <<- dimensions
+  races <<- colours()[1:n_races]
   min_races <- races[2:length(races)]
   
   # how many homes will be simulated
@@ -14,7 +14,7 @@ initiateSchelling <- function(dimensions = c(10, 10), n_races = 4, perc_empty = 
   count_agents <- floor(n_homes * (1 - perc_empty))
   
   # the characteristics that a home can have
-  races <- c("empty", dom_race, min_races)
+  races <- c("empty", races)
   # the probabilities of each characteristics
   probabilities <- c(perc_empty, 
                      (1-perc_empty)*perc_maj, 
@@ -34,10 +34,9 @@ initiateSchelling <- function(dimensions = c(10, 10), n_races = 4, perc_empty = 
                           # used to find the satisfaction of each home
                           distance = rep(NA, prod(dimensions)),
                           unsatisfied = rep(NA, prod(dimensions)))
-  schelling$dom_race <<- ifelse(schelling$race == dom_race, 1, 0)
 }
 
-plotSchelling <- function(title){
+plotSchelling <- function(title = "Schelling Segregation Model"){
   require(data.table)
   require(ggplot2)
   require(RColorBrewer)
@@ -99,8 +98,7 @@ iterate <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = .1){
                              min_sim_threshold = min_sim_threshold){
     # gets the race for the agent
     cur_race <- schelling[x == x_value & y == y_value, race]
-    dom_race <- schelling[x == x_value & y == y_value, dom_race]
-    
+
     # checks if the home is empty to
     if (cur_race == "empty"){
       return(FALSE) # empty houses are not satisfied, therefore will not move!
@@ -109,7 +107,7 @@ iterate <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = .1){
       # I avoid to take the squareroot to speed up the code
       schelling[, distance := (x_value - x)^2 + (y_value - y)^2] 
       
-      # counts the number of agents that live less than two fields away 
+      # counts the number of agents that live two or less fields away 
       # (includes all adjacent agents) and that are similar
       count_similar <- nrow(schelling[distance <= 2 & 
                                        race == cur_race & 
@@ -123,7 +121,7 @@ iterate <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = .1){
       ratio <- count_similar/(count_similar + count_different)
       
       # returns TRUE if the ratio is below the threshold
-      if(dom_race == 1){
+      if(cur_race == races[1]){
       return(ratio < dom_sim_threshold)
       }else{
         return(ratio < min_sim_threshold)
@@ -175,14 +173,14 @@ iterate <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = .1){
                              target = newIDs)
     
     # moves the agents to the new homes
-    schelling[id %in% transition$origin]$race = "empty"
-    schelling[id %in% transition$target]$race = transition$oldRace
+    schelling[id %in% transition$origin]$race <- "empty"
+    schelling[id %in% transition$target]$race <- transition$oldRace
     
     # orders the schelling, although this takes some time, 
     # it is necessary for the other operations
-    schelling <- schelling[order(id)]
-    
-    # updates the ProgressBar
+    schelling <<- schelling[order(id)]
+
+        # updates the ProgressBar
     setTxtProgressBar(pb, iterate/n)
   }
   close(pb)
@@ -192,5 +190,5 @@ iterate <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = .1){
   print(paste0("Time for calculation in seconds: ", round(timedif, 3), " or: ",
                round(n / as.numeric(timedif), 3), " iterations per second"))
   print(ratios.unsatisfied)
-    return(schelling)
 }
+
