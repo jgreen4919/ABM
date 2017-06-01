@@ -91,7 +91,7 @@ display.result <- function(mat, thing.to.track, iteration){
 
 }
 
-bin.matrix <- abm.matrix(dimension = 20)
+bin.matrix <- abm.matrix(dimension = 15)
 ratio <- bin.ratio(bin.matrix)
 par(mfrow=c(1,2))
 pars <- c('plt','usr')
