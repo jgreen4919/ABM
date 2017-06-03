@@ -297,6 +297,6 @@ iterate_wrapped_nearest <- function(n = 10, dom_sim_threshold = .9, min_sim_thre
   plotSchelling(title = paste0("Schelling Segregation Model after ", n, " Iterations (Wrapped)"))
 }
 
-initiateSchelling_wrapped(dimensions = c(20,20), n_races = 2)
+initiateSchelling_wrapped(dimensions = c(20,20), n_races = 4, perc_maj = .6)
 plotSchelling(title = "Schelling")
-iterate_wrapped_nearest(dom_sim_threshold = .5, min_sim_threshold = .5)
+iterate_wrapped_nearest(dom_sim_threshold = .8, min_sim_threshold = .3)
