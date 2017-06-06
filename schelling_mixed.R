@@ -191,4 +191,3 @@ iterate <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = .1){
                round(n / as.numeric(timedif), 3), " iterations per second"))
   print(ratios.unsatisfied)
 }
-
