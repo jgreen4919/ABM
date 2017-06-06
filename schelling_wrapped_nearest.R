@@ -256,7 +256,7 @@ iterate_wrapped_nearest <- function(n = 10, dom_sim_threshold = .9, min_sim_thre
     usIDs <- schelling[(unsatisfied), id] # origin
     
     # finds available IDs for each household moving
-    availIDs <<- c(emptyIDs, usIDs)
+    availIDs <<- sort(c(emptyIDs, usIDs))
     
     #subfunction to find nearest available cell
     find.nearest <- function(cell, avails){
