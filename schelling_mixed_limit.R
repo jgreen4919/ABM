@@ -301,6 +301,6 @@ iterate_wrapped_limit <- function(n = 10, dom_sim_threshold = .5, min_sim_thresh
   plotSchelling(title = paste0("Schelling Segregation Model after ", n, " Iterations (Wrapped)"))
 }
 
-initiateSchelling_wrapped(dimensions = c(10,10), n_races = 2, perc_maj = .6)
+initiateSchelling_wrapped(dimensions = c(20,20), n_races = 2, perc_maj = .7)
 plotSchelling(title = "Schelling")
-iterate_wrapped_limit(dom_sim_threshold = .5, min_sim_threshold = .5, limit = 4)
+iterate_wrapped_limit(dom_sim_threshold = .5, min_sim_threshold = .5, limit = 8)
