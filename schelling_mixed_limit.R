@@ -229,14 +229,14 @@ iterate_wrapped_limit <- function(n = 10, dom_sim_threshold = .5, min_sim_thresh
       }
     }
   }
-  
+
   # creates a ProgressBar
   pb <- txtProgressBar(min = 0, max = 1, style = 3)
   # and tracks time
   t <- Sys.time()
   
   #sets empty vector of ratios
-  ratios.unsatisfied <- c(NULL)
+  ratios.unsatisfied <<- c(NULL)
   
   # iterates
   for (iterate in 1:n){
@@ -249,7 +249,7 @@ iterate_wrapped_limit <- function(n = 10, dom_sim_threshold = .5, min_sim_thresh
               by = 1:nrow(schelling)]
     
     ratio.unsatisfied <- sum(schelling$unsatisfied)/nrow(schelling)
-    ratios.unsatisfied <- c(ratios.unsatisfied, ratio.unsatisfied)
+    ratios.unsatisfied <<- c(ratios.unsatisfied, ratio.unsatisfied)
 
     # move unsatisfied agents to an empty house
     # find the IDs that are empty where agents can migrate to
@@ -306,4 +306,16 @@ iterate_wrapped_limit <- function(n = 10, dom_sim_threshold = .5, min_sim_thresh
 
 initiateSchelling_wrapped(dimensions = c(20,20), n_races = 2, perc_maj = .7)
 plotSchelling(title = "Schelling")
-iterate_wrapped_limit(dom_sim_threshold = .5, min_sim_threshold = .5, limit = 8)
+iterate_wrapped_limit(dom_sim_threshold = .5, min_sim_threshold = .5, limit = 4)
+
+for(i in 1:length(ratios.unsatisfied)){
+  if(i==1){
+    plot(-100, -100, xlim=c(1,10), ylim=c(0,1), 
+         ylab="Pct Unsatisfied", 
+         xlab="Iteration", 
+         main = "Percent of Agents Unsatisfied over Time",
+         type="n", cex.axis=0.8)
+    }else{
+segments(i-1, ratios.unsatisfied[i-1], i, ratios.unsatisfied[i], col="black", lwd=1)
+    }
+}
