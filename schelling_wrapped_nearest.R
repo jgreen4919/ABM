@@ -1,4 +1,7 @@
 #Schelling Segregation Model with uneven preferences (wrapped)
+# Casts a wrapped universe with variable dimensions, number of races, pct empty, and dominant race share
+# Iterates allowing the majority and minority races to have different preferences for neighbor homogeneity
+# Unsatisfied agents move to nearest available cell
 # Based on David Zimmerman's example at: https://www.r-bloggers.com/agent-based-modelling-with-data-table-or-how-to-model-urban-migration-with-r/
 
 initiateSchelling_wrapped <- function(dimensions = c(10, 10), n_races = 4, perc_empty = 0.2, perc_maj = .75){
