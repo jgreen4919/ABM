@@ -235,7 +235,7 @@ iterate_wrapped <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = 
   t <- Sys.time()
   
   #sets empty vector of ratios
-  ratios.unsatisfied <- c(NULL)
+  ratios.unsatisfied <<- c(NULL)
   
   # iterates
   for (iterate in 1:n){
@@ -246,9 +246,11 @@ iterate_wrapped <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = 
                                               dom_sim_threshold = dom_sim_threshold,
                                               min_sim_threshold = min_sim_threshold),
               by = 1:nrow(schelling)]
+    #hacky fix for NAs, which appear to happen when the ratio exactly equals the threshold (and should therefore evaluate to satisfied)
+    schelling$unsatisfied[is.na(schelling$unsatisfied)] <- FALSE
     
     ratio.unsatisfied <- sum(schelling$unsatisfied)/nrow(schelling)
-    ratios.unsatisfied <- c(ratios.unsatisfied, ratio.unsatisfied)
+    ratios.unsatisfied <<- c(ratios.unsatisfied, ratio.unsatisfied)
     
     # move unsatisfied agents to an empty house
     # find the IDs that are empty where agents can migrate to
@@ -293,3 +295,15 @@ iterate_wrapped <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = 
 initiateSchelling_wrapped(dimensions = c(50,50), n_races = 2, perc_empty = .2, perc_maj = .6)
 plotSchelling(title = "Schelling Segregation Model (Wrapped Environment)")
 iterate_wrapped(n = 10, dom_sim_threshold = .5, min_sim_threshold = .5)
+
+for(i in 1:length(ratios.unsatisfied)){
+  if(i==1){
+    plot(-100, -100, xlim=c(1,10), ylim=c(0,1), 
+         ylab="Pct Unsatisfied", 
+         xlab="Iteration", 
+         main = "Percent of Agents Unsatisfied over Time",
+         type="n", cex.axis=0.8)
+  }else{
+    segments(i-1, ratios.unsatisfied[i-1], i, ratios.unsatisfied[i], col="black", lwd=1)
+  }
+}

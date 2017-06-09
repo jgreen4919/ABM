@@ -247,6 +247,8 @@ iterate_wrapped_limit <- function(n = 10, dom_sim_threshold = .5, min_sim_thresh
                                                       dom_sim_threshold = dom_sim_threshold,
                                                       min_sim_threshold = min_sim_threshold),
               by = 1:nrow(schelling)]
+    #hacky fix for NAs, which appear to happen when the ratio exactly equals the threshold (and should therefore evaluate to satisfied)
+    schelling$unsatisfied[is.na(schelling$unsatisfied)] <- FALSE
     
     ratio.unsatisfied <- sum(schelling$unsatisfied)/nrow(schelling)
     ratios.unsatisfied <<- c(ratios.unsatisfied, ratio.unsatisfied)
