@@ -1,0 +1,782 @@
+# Schelling Segregation Model with uneven preferences (wrapped universe)
+# This first model casts a wrapped universe with variable dimensions, number of races, pct empty, and dominant race
+# share
+# Iterates allowing the majority and minority races to have different preferences for neighbor homogeneity
+# All models based on on David Zimmerman's example at: https://www.r-bloggers.com/agent-based-modelling-with-data-table-or-how-to-model-urban-migration-with-r/
+
+# The first function initiates the Schelling universe, taking a specified grid size, 
+# number of races, percent of empty cells, and percent of agents of the dominant race
+initiateSchelling_wrapped <- function(dimensions = c(10, 10), n_races = 4, perc_empty = 0.2, perc_maj = .75){
+  require(data.table)
+  dims <<- dimensions
+  races <<- colours()[1:n_races] # create "races" based on colors
+  
+  # get number of homes (equal to number of cells)
+  n_homes = prod(dimensions)
+  # calculates the number of agents (cells minus the percent of empty homes)
+  count_agents <- floor(n_homes * (1 - perc_empty))
+  
+  # the characteristics that a home can have -- either empty or a particular race
+  races <- c("empty", races)
+  # the probabilities of a home having each characteristic: 
+  #   probability of a cell being empty, of being occupied by the dominant race conditional on not being empty, 
+  #   and of being in a minority race conditional on not being empty
+  probabilities <- c(perc_empty, 
+                     (1-perc_empty)*perc_maj, 
+                     rep((1 - perc_empty - (1-perc_empty)*perc_maj)/(n_races-1), times = n_races-1)
+  )
+  
+  # cast the schelling data.table in the global environment
+  schelling <<- data.table(id = 1:prod(dimensions),
+                           x = rep(1:dimensions[1], 
+                                   dimensions[2]),
+                           y = rep(1:dimensions[2], 
+                                   each = dimensions[1]),
+                           race = sample(x = races, 
+                                         size = n_homes, 
+                                         prob = probabilities,
+                                         replace = TRUE),
+                           unsatisfied = rep(NA, prod(dimensions))) # leave this column empty to fill later
+}
+
+#Plots the grid
+plotSchelling <- function(title){
+  require(data.table)
+  require(ggplot2)
+  require(RColorBrewer)
+  # get races to get the right number of colors
+  races <- unique(schelling$race)
+  
+  # find the dimensions of the grid to get the best dot size
+  dims <- c(max(schelling$x), max(schelling$y))
+  
+  # create colors
+  # check if there are 3 or fewer races, 
+  # RColorBrewer otherwise
+  if (length(races) <= 3) {
+    colors <- brewer.pal(3, "Dark2")
+  } else {
+    colors <- brewer.pal(length(races), "Dark2")
+  }
+  
+  # plot the graph  
+  p <- ggplot(data = schelling[race != "empty"], 
+              aes(x = x, y = y, color = race)) + 
+    # resize dots to grid
+    geom_point(size = 100/sqrt(prod(dims))) +  
+    scale_colour_manual(values = colors) + 
+    # theme: mostly blank
+    theme_bw() + 
+    theme(axis.line = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          legend.position = "none",
+          panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.background = element_blank(),
+          plot.title = element_text(lineheight=3, 
+                                    face="bold", 
+                                    color="black", 
+                                    size=14)) +
+    # fix axes to avoid distortion in the picture
+    coord_fixed(ratio = 1) + 
+    # add the title
+    ggtitle(title)
+  
+  return(p)
+}
+
+# For each iteration, each agent checks whether the pct of like neighbors is below their preference threshold
+# Moves to empty cell or cell of fellow unsatisfied agent if not
+iterate_wrapped <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = .1){
+  require(data.table)
+  # subfunction that checks for a given x and y value if the agent is unsatisfied (returns TRUE or FALSE)
+  is.unsatisfied_wrapped <- function(x_value, y_value, 
+                                     dom_sim_threshold = dom_sim_threshold,
+                                     min_sim_threshold = min_sim_threshold){
+    # gets the race and id for the agent
+    cur_race <- schelling[x == x_value & y == y_value, race]
+    cur_id <- schelling[x == x_value & y == y_value, id]
+    
+    #sub-subfunction to identify agent's neighbors
+    select.neighbors <- function(dimensions){
+      
+      #Identify coordinates of neighbors (adjusts wrapping based on position of agent)
+      neighbors <- as.data.frame(matrix(NA, nrow = 8, ncol = 2))
+      if(x_value == 1 & y_value == 1){
+        neighbors[1,] <- schelling[x == dimensions[1] & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == dimensions[1] & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == dimensions[1] & y == dimensions[2], 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == dimensions[2], 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == dimensions[2], 2:3]
+      }
+      if(x_value == 1 & y_value %in% c(2:(dimensions[2]-1))){
+        neighbors[1,] <- schelling[x == dimensions[1] & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == dimensions[1] & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == dimensions[1] & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == y_value-1, 2:3]
+      }
+      if(x_value == 1 & y_value == dimensions[2]){
+        neighbors[1,] <- schelling[x == dimensions[1] & y == 1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == 1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == 1, 2:3]
+        neighbors[4,] <- schelling[x == dimensions[1] & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == dimensions[1] & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == y_value-1, 2:3]
+      }
+      if(x_value %in% c(2:(dimensions[1]-1)) & y_value == 1){
+        neighbors[1,] <- schelling[x == x_value-1 & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == dimensions[2], 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == dimensions[2], 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == dimensions[2], 2:3]
+      }
+      if(x_value %in% c(2:(dimensions[1]-1)) & y_value %in% c(2:(dimensions[2]-1))){
+        neighbors[1,] <- schelling[x == x_value-1 & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == y_value-1, 2:3] 
+      }
+      if(x_value %in% c(2:(dimensions[1]-1)) & y_value == dimensions[2]){
+        neighbors[1,] <- schelling[x == x_value-1 & y == 1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == 1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == 1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == y_value-1, 2:3]
+      }
+      if(x_value == dimensions[1] & y_value == 1){
+        neighbors[1,] <- schelling[x == x_value-1 & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == 1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == 1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == dimensions[2], 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == dimensions[2], 2:3]
+        neighbors[8,] <- schelling[x == 1 & y == dimensions[2], 2:3]
+      }
+      if(x_value == dimensions[1] & y_value %in% c(2:(dimensions[2]-1))){
+        neighbors[1,] <- schelling[x == x_value-1 & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == 1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == 1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == 1 & y == y_value-1, 2:3]
+      }
+      if(x_value == dimensions[1] & y_value == dimensions[2]){
+        neighbors[1,] <- schelling[x == x_value-1 & y == 1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == 1, 2:3]
+        neighbors[3,] <- schelling[x == 1 & y == 1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == 1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == 1 & y == y_value-1, 2:3]
+      }
+      names(neighbors) <- c("x","y")
+      
+      ids <- schelling[x %in% neighbors$x & y %in% neighbors$y, id]
+      
+      return(ids)
+    }
+    # checks if the home is empty
+    if (cur_race == "empty"){
+      return(FALSE) # empty houses can't be unsatisfied
+    }else{
+      neighbor.ids <- select.neighbors(dimensions = dims)
+      
+      # counts simliar neighbors
+      count_similar <- sum(schelling[id %in% neighbor.ids, 
+                                     id != cur_id &
+                                       race == cur_race])
+      # counts different neighbors
+      count_different <- sum(schelling[id %in% neighbor.ids, 
+                                       id != cur_id &
+                                         race != cur_race & 
+                                         race != "empty"])
+      
+      # calculates the ratio
+      ratio <- count_similar/(count_similar + count_different)
+      
+      # returns TRUE if the ratio is less than or equal to the threshold
+      if(cur_race == races[1]){
+        return(ratio <= dom_sim_threshold)
+      }else{
+        return(ratio <= min_sim_threshold)
+      }
+    }
+  }
+  
+  # creates a ProgressBar
+  pb <- txtProgressBar(min = 0, max = 1, style = 3)
+  # and tracks time
+  t <- Sys.time()
+  
+  #sets empty vector of ratios
+  ratios.unsatisfied <<- c(NULL)
+  
+  # iterates
+  for (iterate in 1:n){
+    # fills the boolean vector "unsatisfied" 
+    # indicates if the household is unsatisfied 
+    schelling[, unsatisfied := is.unsatisfied_wrapped(x_value = x, 
+                                                      y_value = y, 
+                                                      dom_sim_threshold = dom_sim_threshold,
+                                                      min_sim_threshold = min_sim_threshold),
+              by = 1:nrow(schelling)]
+    #hacky fix for NAs, which appear to happen when the ratio exactly equals the threshold (and should therefore evaluate to satisfied)
+    schelling$unsatisfied[is.na(schelling$unsatisfied)] <- FALSE
+    
+    ratio.unsatisfied <- sum(schelling$unsatisfied)/nrow(schelling)
+    ratios.unsatisfied <<- c(ratios.unsatisfied, ratio.unsatisfied)
+    
+    # move unsatisfied agents to an empty house
+    # find the IDs that are empty where agents can migrate to
+    emptyIDs <- schelling[race == "empty", id] # finds the id of empty houses
+    
+    # finds the origin of the agents moving, 
+    oldIDs <- schelling[(unsatisfied), id] # origin
+    
+    # generates new IDs for each household moving
+    # note that households can move to the house of other moving agents
+    # in this version, agents can (by a small chance) choose to "move" to their 
+    # existing home
+    newIDs <- sample(x = c(emptyIDs, oldIDs), 
+                     size = length(oldIDs), 
+                     replace = F) # target
+    
+    # cast a new data.table showing migration from origin_id to target-id
+    transition <- data.table(origin = oldIDs, 
+                             oldRace = schelling[id %in% oldIDs, race],
+                             target = newIDs)
+    
+    # move agents to the new homes
+    schelling[id %in% transition$origin]$race = "empty"
+    schelling[id %in% transition$target]$race = transition$oldRace
+    
+    # orders and reset schelling
+    schelling <<- schelling[order(id)]
+    
+    # updates the ProgressBar
+    setTxtProgressBar(pb, iterate/n)
+  }
+  close(pb)
+  timedif <- Sys.time() - t
+  
+  # print out statistics for the calculation time
+  print(paste0("Time for calculation in seconds: ", round(timedif, 3), " or: ",
+               round(n / as.numeric(timedif), 3), " iterations per second"))
+  print(ratios.unsatisfied)
+  plotSchelling(title = paste0("Schelling Segregation Model after ", n, " Iterations (Wrapped)"))
+}
+
+# In this version, everything is the same except unsatisfied agents move to NEAREST AVAILABLE cell
+# For each iteration, each agent checks whether the pct of like neighbors is below their preference threshold
+# Moves to NEAREST empty cell or cell of fellow unsatisfied agent if not, unless that cell has already been taken (in which case moves to next nearest)
+
+iterate_wrapped_nearest <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = .1){
+  require(data.table)
+  # subfunction that checks for a given x and y value if the agent is 
+  # unsatisfied (returns TRUE or FALSE)
+  is.unsatisfied_wrapped <- function(x_value, y_value, 
+                                     dom_sim_threshold = dom_sim_threshold,
+                                     min_sim_threshold = min_sim_threshold){
+    # gets the race and id for the agent
+    cur_race <- schelling[x == x_value & y == y_value, race]
+    cur_id <- schelling[x == x_value & y == y_value, id]
+    
+    #sub-subfunction to identify agent's neighbors
+    select.neighbors <- function(dimensions){
+      
+      #Identify coordinates of neighbors (adjusts wrapping based on position of agent)
+      neighbors <- as.data.frame(matrix(NA, nrow = 8, ncol = 2))
+      if(x_value == 1 & y_value == 1){
+        neighbors[1,] <- schelling[x == dimensions[1] & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == dimensions[1] & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == dimensions[1] & y == dimensions[2], 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == dimensions[2], 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == dimensions[2], 2:3]
+      }
+      if(x_value == 1 & y_value %in% c(2:(dimensions[2]-1))){
+        neighbors[1,] <- schelling[x == dimensions[1] & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == dimensions[1] & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == dimensions[1] & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == y_value-1, 2:3]
+      }
+      if(x_value == 1 & y_value == dimensions[2]){
+        neighbors[1,] <- schelling[x == dimensions[1] & y == 1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == 1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == 1, 2:3]
+        neighbors[4,] <- schelling[x == dimensions[1] & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == dimensions[1] & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == y_value-1, 2:3]
+      }
+      if(x_value %in% c(2:(dimensions[1]-1)) & y_value == 1){
+        neighbors[1,] <- schelling[x == x_value-1 & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == dimensions[2], 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == dimensions[2], 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == dimensions[2], 2:3]
+      }
+      if(x_value %in% c(2:(dimensions[1]-1)) & y_value %in% c(2:(dimensions[2]-1))){
+        neighbors[1,] <- schelling[x == x_value-1 & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == y_value-1, 2:3] 
+      }
+      if(x_value %in% c(2:(dimensions[1]-1)) & y_value == dimensions[2]){
+        neighbors[1,] <- schelling[x == x_value-1 & y == 1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == 1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == 1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == y_value-1, 2:3]
+      }
+      if(x_value == dimensions[1] & y_value == 1){
+        neighbors[1,] <- schelling[x == x_value-1 & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == 1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == 1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == dimensions[2], 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == dimensions[2], 2:3]
+        neighbors[8,] <- schelling[x == 1 & y == dimensions[2], 2:3]
+      }
+      if(x_value == dimensions[1] & y_value %in% c(2:(dimensions[2]-1))){
+        neighbors[1,] <- schelling[x == x_value-1 & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == 1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == 1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == 1 & y == y_value-1, 2:3]
+      }
+      if(x_value == dimensions[1] & y_value == dimensions[2]){
+        neighbors[1,] <- schelling[x == x_value-1 & y == 1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == 1, 2:3]
+        neighbors[3,] <- schelling[x == 1 & y == 1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == 1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == 1 & y == y_value-1, 2:3]
+      }
+      names(neighbors) <- c("x","y")
+      
+      ids <- schelling[x %in% neighbors$x & y %in% neighbors$y, id]
+      
+      return(ids)
+    }
+    # checks if the home is empty
+    if (cur_race == "empty"){
+      return(FALSE) # empty houses can't be unsatisfied
+    }else{
+      neighbor.ids <- select.neighbors(dimensions = dims)
+      
+      # counts simliar neighbors
+      count_similar <- sum(schelling[id %in% neighbor.ids, 
+                                     id != cur_id &
+                                       race == cur_race])
+      # counts different neighbors
+      count_different <- sum(schelling[id %in% neighbor.ids, 
+                                       id != cur_id &
+                                         race != cur_race & 
+                                         race != "empty"])
+      
+      # calculates the ratio
+      ratio <- count_similar/(count_similar + count_different)
+      
+      # returns TRUE if the ratio is less than or equal to the threshold
+      if(cur_race == races[1]){
+        return(ratio <= dom_sim_threshold)
+      }else{
+        return(ratio <= min_sim_threshold)
+      }
+    }
+  }
+  
+  # creates a ProgressBar
+  pb <- txtProgressBar(min = 0, max = 1, style = 3)
+  # and tracks time
+  t <- Sys.time()
+  
+  #sets empty vector of ratios
+  ratios.unsatisfied <<- c(NULL)
+  
+  # iterates
+  for (iterate in 1:n){
+    # fills the boolean vector "unsatisfied" 
+    # indicates if the household is unsatisfied 
+    schelling[, unsatisfied := is.unsatisfied_wrapped(x_value = x, 
+                                                      y_value = y, 
+                                                      dom_sim_threshold = dom_sim_threshold,
+                                                      min_sim_threshold = min_sim_threshold),
+              by = 1:nrow(schelling)]
+    #hacky fix for NAs, which appear to happen when the ratio exactly equals the threshold (and should therefore evaluate to satisfied)
+    schelling$unsatisfied[is.na(schelling$unsatisfied)] <- FALSE
+    
+    ratio.unsatisfied <- sum(schelling$unsatisfied)/nrow(schelling)
+    ratios.unsatisfied <<- c(ratios.unsatisfied, ratio.unsatisfied)
+    
+    # move unsatisfied agents to an empty house
+    # find the IDs that are empty where agents can migrate to
+    emptyIDs <- schelling[race == "empty", id] # finds the id of empty houses
+    
+    usIDs <- schelling[(unsatisfied), id] # finds the origin of the agents moving, 
+    
+    availIDs <<- sort(c(emptyIDs, usIDs)) # finds available IDs for each household moving
+    
+    #subfunction to find nearest available cell
+    find.nearest <- function(cell, avails){
+      distance2 <- c(NULL) #cast empty vector to fill with distances to available cells
+      for(i in 1:length(avails)){
+        #fill distances vector with squared distance (to keep all values positive) between current cell and each available cell
+        distance2[i] <- (schelling[id == cell, x] - schelling[id == avails[i], x])^2 + (schelling[id == cell, y] - schelling[id == avails[i], y])^2
+      }
+      distance2 <- distance2[which(distance2 > 0)] #drop current cell
+      min.id <- which.min(replace(distance2, distance2<=0, NA)) #identify id of closest available cell
+      availIDs <<- avails[-which(avails == avails[min.id])] #remove that cell from list of available ids
+      return(avails[min.id]) #return id
+    }
+    
+    # cast a new data.table showing migration from origin_id to target-id
+    transition <- data.table(origin = usIDs, 
+                             oldRace = schelling[id %in% usIDs, race])
+    transition[, target := find.nearest(cell = origin, avails = availIDs),
+               by = 1:nrow(transition)]
+    
+    # move agents to the new homes
+    schelling[id %in% transition$origin]$race = "empty"
+    schelling[id %in% transition$target]$race = transition$oldRace
+    
+    # orders and reset schelling
+    schelling <<- schelling[order(id)]
+    
+    # updates the ProgressBar
+    setTxtProgressBar(pb, iterate/n)
+  }
+  close(pb)
+  timedif <- Sys.time() - t
+  
+  # print out statistics for the calculation time
+  print(paste0("Time for calculation in seconds: ", round(timedif, 3), " or: ",
+               round(n / as.numeric(timedif), 3), " iterations per second"))
+  print(ratios.unsatisfied)
+  plotSchelling(title = paste0("Schelling Segregation Model after ", n, " Iterations (Wrapped)"))
+}
+
+# In this version unsatisfied agents move to RANDOM AVAILABLE CELL WITHIN A DISTANCE LIMIT
+# Checks to see if each agent is unsatisfied, 
+#    limits their available cells to empty and unsatisfied cells within specified number of steps
+
+
+iterate_wrapped_limit <- function(n = 10, dom_sim_threshold = .5, min_sim_threshold = .5, limit = 8){
+  require(data.table)
+  # subfunction that checks for a given x and y value if the agent is 
+  # unsatisfied (returns TRUE or FALSE)
+  is.unsatisfied_wrapped <- function(x_value, y_value, 
+                                     dom_sim_threshold = dom_sim_threshold,
+                                     min_sim_threshold = min_sim_threshold){
+    # gets the race and id for the agent
+    cur_race <- schelling[x == x_value & y == y_value, race]
+    cur_id <- schelling[x == x_value & y == y_value, id]
+    
+    #sub-subfunction to identify agent's neighbors
+    select.neighbors <- function(dimensions){
+      
+      #Identify coordinates of neighbors (adjusts wrapping based on position of agent)
+      neighbors <- as.data.frame(matrix(NA, nrow = 8, ncol = 2))
+      if(x_value == 1 & y_value == 1){
+        neighbors[1,] <- schelling[x == dimensions[1] & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == dimensions[1] & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == dimensions[1] & y == dimensions[2], 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == dimensions[2], 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == dimensions[2], 2:3]
+      }
+      if(x_value == 1 & y_value %in% c(2:(dimensions[2]-1))){
+        neighbors[1,] <- schelling[x == dimensions[1] & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == dimensions[1] & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == dimensions[1] & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == y_value-1, 2:3]
+      }
+      if(x_value == 1 & y_value == dimensions[2]){
+        neighbors[1,] <- schelling[x == dimensions[1] & y == 1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == 1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == 1, 2:3]
+        neighbors[4,] <- schelling[x == dimensions[1] & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == dimensions[1] & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == y_value-1, 2:3]
+      }
+      if(x_value %in% c(2:(dimensions[1]-1)) & y_value == 1){
+        neighbors[1,] <- schelling[x == x_value-1 & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == dimensions[2], 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == dimensions[2], 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == dimensions[2], 2:3]
+      }
+      if(x_value %in% c(2:(dimensions[1]-1)) & y_value %in% c(2:(dimensions[2]-1))){
+        neighbors[1,] <- schelling[x == x_value-1 & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == y_value-1, 2:3] 
+      }
+      if(x_value %in% c(2:(dimensions[1]-1)) & y_value == dimensions[2]){
+        neighbors[1,] <- schelling[x == x_value-1 & y == 1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == 1, 2:3]
+        neighbors[3,] <- schelling[x == x_value+1 & y == 1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == x_value+1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == x_value+1 & y == y_value-1, 2:3]
+      }
+      if(x_value == dimensions[1] & y_value == 1){
+        neighbors[1,] <- schelling[x == x_value-1 & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == 1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == 1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == dimensions[2], 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == dimensions[2], 2:3]
+        neighbors[8,] <- schelling[x == 1 & y == dimensions[2], 2:3]
+      }
+      if(x_value == dimensions[1] & y_value %in% c(2:(dimensions[2]-1))){
+        neighbors[1,] <- schelling[x == x_value-1 & y == y_value+1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == y_value+1, 2:3]
+        neighbors[3,] <- schelling[x == 1 & y == y_value+1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == 1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == 1 & y == y_value-1, 2:3]
+      }
+      if(x_value == dimensions[1] & y_value == dimensions[2]){
+        neighbors[1,] <- schelling[x == x_value-1 & y == 1, 2:3]
+        neighbors[2,] <- schelling[x == x_value & y == 1, 2:3]
+        neighbors[3,] <- schelling[x == 1 & y == 1, 2:3]
+        neighbors[4,] <- schelling[x == x_value-1 & y == y_value, 2:3]
+        neighbors[5,] <- schelling[x == 1 & y == y_value, 2:3]
+        neighbors[6,] <- schelling[x == x_value-1 & y == y_value-1, 2:3]
+        neighbors[7,] <- schelling[x == x_value & y == y_value-1, 2:3]
+        neighbors[8,] <- schelling[x == 1 & y == y_value-1, 2:3]
+      }
+      names(neighbors) <- c("x","y")
+      
+      ids <- schelling[x %in% neighbors$x & y %in% neighbors$y, id]
+      
+      return(ids)
+    }
+    # checks if the home is empty
+    if (cur_race == "empty"){
+      return(FALSE) # empty houses can't be unsatisfied
+    }else{
+      neighbor.ids <- select.neighbors(dimensions = dims)
+      
+      # counts simliar neighbors
+      count_similar <- sum(schelling[id %in% neighbor.ids, 
+                                     id != cur_id &
+                                       race == cur_race])
+      # counts different neighbors
+      count_different <- sum(schelling[id %in% neighbor.ids, 
+                                       id != cur_id &
+                                         race != cur_race & 
+                                         race != "empty"])
+      
+      # calculates the ratio
+      ratio <- count_similar/(count_similar + count_different)
+      
+      # returns TRUE if the ratio is less than or equal to the threshold
+      if(cur_race == races[1]){
+        return(ratio <= dom_sim_threshold)
+      }else{
+        return(ratio <= min_sim_threshold)
+      }
+    }
+  }
+  
+  # creates a ProgressBar
+  pb <- txtProgressBar(min = 0, max = 1, style = 3)
+  # and tracks time
+  t <- Sys.time()
+  
+  #sets empty vector of ratios
+  ratios.unsatisfied <<- c(NULL)
+  
+  # iterates
+  for (iterate in 1:n){
+    # fills the boolean vector "unsatisfied" 
+    # indicates if the household is unsatisfied 
+    schelling[, unsatisfied := is.unsatisfied_wrapped(x_value = x, 
+                                                      y_value = y, 
+                                                      dom_sim_threshold = dom_sim_threshold,
+                                                      min_sim_threshold = min_sim_threshold),
+              by = 1:nrow(schelling)]
+    #hacky fix for NAs, which appear to happen when the ratio exactly equals the threshold (and should therefore evaluate to satisfied)
+    schelling$unsatisfied[is.na(schelling$unsatisfied)] <- FALSE
+    
+    ratio.unsatisfied <- sum(schelling$unsatisfied)/nrow(schelling)
+    ratios.unsatisfied <<- c(ratios.unsatisfied, ratio.unsatisfied)
+    
+    # move unsatisfied agents to an empty house
+    # find the IDs that are empty where agents can migrate to
+    emptyIDs <- schelling[race == "empty", id] # finds the id of empty houses
+    
+    usIDs <- schelling[(unsatisfied), id] # finds the origin of the agents moving
+    
+    availIDs <<- sort(c(emptyIDs, usIDs)) # finds available IDs for each household moving
+    
+    #subfunction to find available cells within specified distance limit
+    find.available <- function(cell, avails, lim){
+      distance <- c(NULL) #cast empty vector to fill with distances to available cells
+      for(i in 1:length(avails)){
+        #fill distances vector with absolute values of distance (to keep all values positive) between current cell and each available cell
+        distance[i] <- abs(schelling[id == cell, x] - schelling[id == avails[i], x]) + abs(schelling[id == cell, y] - schelling[id == avails[i], y])
+      }
+      a <- as.data.frame(cbind(avails, distance)) #specify distance from current cell to each available cell
+      options <- with(a, avails[distance > 0 & distance <= lim]) #pare down options to cells less than or equal to limited number of moves
+      if(length(options >= 1)){
+        target.id <- sample(options, size = 1)
+      }else{target.id <- cell}
+      availIDs <<- avails[-which(avails == target.id)]
+      return(avails[which(avails == target.id)])
+    }
+    
+    # cast a new data.table showing migration from origin_id to target-id
+    transition <- data.table(origin = usIDs, 
+                             oldRace = schelling[id %in% usIDs, race])
+    transition[, target := find.available(cell = origin, avails = availIDs, lim = limit),
+               by = 1:nrow(transition)]
+    
+    # move agents to the new homes
+    schelling[id %in% transition$origin]$race = "empty"
+    schelling[id %in% transition$target]$race = transition$oldRace
+    
+    # orders and reset schelling
+    schelling <<- schelling[order(id)]
+    
+    # updates the ProgressBar
+    setTxtProgressBar(pb, iterate/n)
+  }
+  close(pb)
+  timedif <- Sys.time() - t
+  
+  # print out statistics for the calculation time
+  print(paste0("Time for calculation in seconds: ", round(timedif, 3), " or: ",
+               round(n / as.numeric(timedif), 3), " iterations per second"))
+  print(ratios.unsatisfied)
+  plotSchelling(title = paste0("Schelling Segregation Model after ", n, " Iterations (Wrapped)"))
+}
+
+#Test it out: Base
+initiateSchelling_wrapped(dimensions = c(20,20), n_races = 2, perc_empty = .2, perc_maj = .6)
+plotSchelling(title = "Schelling Segregation Model (Wrapped Environment)")
+iterate_wrapped(n = 10, dom_sim_threshold = .5, min_sim_threshold = .5)
+
+#Plot pct satisfied over time
+for(i in 1:length(ratios.unsatisfied)){
+  if(i==1){
+    plot(-100, -100, xlim=c(1,10), ylim=c(0,1), 
+         ylab="Pct Unsatisfied", 
+         xlab="Iteration", 
+         main = "Percent of Agents Unsatisfied over Time",
+         type="n", cex.axis=0.8)
+  }else{
+    segments(i-1, ratios.unsatisfied[i-1], i, ratios.unsatisfied[i], col="black", lwd=1)
+  }
+}
+
+#Test it out: Nearest
+initiateSchelling_wrapped(dimensions = c(20,20), n_races = 4, perc_maj = .6)
+plotSchelling(title = "Schelling")
+iterate_wrapped_nearest(dom_sim_threshold = .8, min_sim_threshold = .3)
+
+#Plot pct unsatisfied over time
+for(i in 1:length(ratios.unsatisfied)){
+  if(i==1){
+    plot(-100, -100, xlim=c(1,10), ylim=c(0,1), 
+         ylab="Pct Unsatisfied", 
+         xlab="Iteration", 
+         main = "Percent of Agents Unsatisfied over Time",
+         type="n", cex.axis=0.8)
+  }else{
+    segments(i-1, ratios.unsatisfied[i-1], i, ratios.unsatisfied[i], col="black", lwd=1)
+  }
+}
+
+#Test it out: Distance limits
+initiateSchelling_wrapped(dimensions = c(20,20), n_races = 2, perc_maj = .7)
+plotSchelling(title = "Schelling")
+iterate_wrapped_limit(dom_sim_threshold = .5, min_sim_threshold = .5, limit = 4)
+
+#Plot pct unsatisfied over time
+for(i in 1:length(ratios.unsatisfied)){
+  if(i==1){
+    plot(-100, -100, xlim=c(1,10), ylim=c(0,1), 
+         ylab="Pct Unsatisfied", 
+         xlab="Iteration", 
+         main = "Percent of Agents Unsatisfied over Time",
+         type="n", cex.axis=0.8)
+  }else{
+    segments(i-1, ratios.unsatisfied[i-1], i, ratios.unsatisfied[i], col="black", lwd=1)
+  }
+}
