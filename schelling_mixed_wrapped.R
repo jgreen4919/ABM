@@ -3,13 +3,13 @@
 # Iterates allowing the majority and minority races to have different preferences for neighbor homogeneity
 # Based on David Zimmerman's example at: https://www.r-bloggers.com/agent-based-modelling-with-data-table-or-how-to-model-urban-migration-with-r/
 
+# The first function initiates the Schelling universe, taking a specified grid size, 
+# number of races, percent of empty cells, and percent of agents of the dominant race
 initiateSchelling_wrapped <- function(dimensions = c(10, 10), n_races = 4, perc_empty = 0.2, perc_maj = .75){
   require(data.table)
-  # create "races" based on colors
   dims <<- dimensions
-  races <<- colours()[1:n_races]
-  min_races <- races[2:length(races)]
-  
+  races <<- colours()[1:n_races] # create "races" based on colors
+
   # get number of homes (equal to number of cells)
   n_homes = prod(dimensions)
   # calculates the number of agents (cells minus the percent of empty homes)
@@ -17,13 +17,15 @@ initiateSchelling_wrapped <- function(dimensions = c(10, 10), n_races = 4, perc_
   
   # the characteristics that a home can have -- either empty or a particular race
   races <- c("empty", races)
-  # the probabilities of a home having each characteristic
+  # the probabilities of a home having each characteristic: 
+  #   probability of a cell being empty, of being occupied by the dominant race conditional on not being empty, 
+  #   and of being in a minority race conditional on not being empty
   probabilities <- c(perc_empty, 
                      (1-perc_empty)*perc_maj, 
                      rep((1 - perc_empty - (1-perc_empty)*perc_maj)/(n_races-1), times = n_races-1)
   )
   
-  # creates the global schelling data.table
+  # cast the schelling data.table in the global environment
   schelling <<- data.table(id = 1:prod(dimensions),
                            x = rep(1:dimensions[1], 
                                    dimensions[2]),
@@ -33,10 +35,10 @@ initiateSchelling_wrapped <- function(dimensions = c(10, 10), n_races = 4, perc_
                                          size = n_homes, 
                                          prob = probabilities,
                                          replace = TRUE),
-                           # used to find the satisfaction of each home
-                           unsatisfied = rep(NA, prod(dimensions)))
+                           unsatisfied = rep(NA, prod(dimensions))) # leave this column empty to fill later
 }
 
+#Plots the grid
 plotSchelling <- function(title){
   require(data.table)
   require(ggplot2)
@@ -49,7 +51,6 @@ plotSchelling <- function(title){
   
   # create colors
   # check if there are 3 or fewer races, 
-  # this would create issues with brewer.pal 
   # RColorBrewer otherwise
   if (length(races) <= 3) {
     colors <- brewer.pal(3, "Dark2")
@@ -89,10 +90,11 @@ plotSchelling <- function(title){
   return(p)
 }
 
+# For each iteration, each agent checks whether the pct of like neighbors is below their preference threshold
+# Moves to empty cell or cell of fellow unsatisfied agent if not
 iterate_wrapped <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = .1){
   require(data.table)
-  # subfunction that checks for a given x and y value if the agent is 
-  # unsatisfied (returns TRUE or FALSE)
+  # subfunction that checks for a given x and y value if the agent is unsatisfied (returns TRUE or FALSE)
   is.unsatisfied_wrapped <- function(x_value, y_value, 
                              dom_sim_threshold = dom_sim_threshold,
                              min_sim_threshold = min_sim_threshold){
@@ -261,7 +263,7 @@ iterate_wrapped <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = 
     
     # generates new IDs for each household moving
     # note that households can move to the house of other moving agents
-    # also, agents can (by a small chance) choose to "move" to their 
+    # in this version, agents can (by a small chance) choose to "move" to their 
     # existing home
     newIDs <- sample(x = c(emptyIDs, oldIDs), 
                      size = length(oldIDs), 
@@ -292,10 +294,12 @@ iterate_wrapped <- function(n = 10, dom_sim_threshold = .9, min_sim_threshold = 
   plotSchelling(title = paste0("Schelling Segregation Model after ", n, " Iterations (Wrapped)"))
 }
 
+#Test it out
 initiateSchelling_wrapped(dimensions = c(50,50), n_races = 2, perc_empty = .2, perc_maj = .6)
 plotSchelling(title = "Schelling Segregation Model (Wrapped Environment)")
 iterate_wrapped(n = 10, dom_sim_threshold = .5, min_sim_threshold = .5)
 
+#Plot pct satisfied over time
 for(i in 1:length(ratios.unsatisfied)){
   if(i==1){
     plot(-100, -100, xlim=c(1,10), ylim=c(0,1), 

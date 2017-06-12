@@ -4,13 +4,14 @@
 # Unsatisfied agents move to random available cell within distance limit
 # Based on David Zimmerman's example at: https://www.r-bloggers.com/agent-based-modelling-with-data-table-or-how-to-model-urban-migration-with-r/
 
+# The first function initiates the Schelling universe, taking a specified grid size, 
+# number of races, percent of empty cells, and percent of agents of the dominant race
 initiateSchelling_wrapped <- function(dimensions = c(10, 10), n_races = 4, perc_empty = 0.2, perc_maj = .75){
   require(data.table)
   # create "races" based on colors
   dims <<- dimensions
   races <<- colours()[1:n_races]
-  min_races <- races[2:length(races)]
-  
+
   # get number of homes (equal to number of cells)
   n_homes = prod(dimensions)
   # calculates the number of agents (cells minus the percent of empty homes)
@@ -18,7 +19,9 @@ initiateSchelling_wrapped <- function(dimensions = c(10, 10), n_races = 4, perc_
   
   # the characteristics that a home can have -- either empty or a particular race
   races <- c("empty", races)
-  # the probabilities of a home having each characteristic
+  # the probabilities of a home having each characteristic: 
+  #   probability of a cell being empty, of being occupied by the dominant race conditional on not being empty, 
+  #   and of being in a minority race conditional on not being empty
   probabilities <- c(perc_empty, 
                      (1-perc_empty)*perc_maj, 
                      rep((1 - perc_empty - (1-perc_empty)*perc_maj)/(n_races-1), times = n_races-1)
@@ -34,10 +37,10 @@ initiateSchelling_wrapped <- function(dimensions = c(10, 10), n_races = 4, perc_
                                          size = n_homes, 
                                          prob = probabilities,
                                          replace = TRUE),
-                           # used to find the satisfaction of each home
-                           unsatisfied = rep(NA, prod(dimensions)))
+                           unsatisfied = rep(NA, prod(dimensions))) # leave this column empty to fill later
 }
 
+#Plots the grid
 plotSchelling <- function(title){
   require(data.table)
   require(ggplot2)
@@ -50,7 +53,6 @@ plotSchelling <- function(title){
   
   # create colors
   # check if there are 3 or fewer races, 
-  # this would create issues with brewer.pal 
   # RColorBrewer otherwise
   if (length(races) <= 3) {
     colors <- brewer.pal(3, "Dark2")
@@ -257,20 +259,18 @@ iterate_wrapped_limit <- function(n = 10, dom_sim_threshold = .5, min_sim_thresh
     # find the IDs that are empty where agents can migrate to
     emptyIDs <- schelling[race == "empty", id] # finds the id of empty houses
     
-    # finds the origin of the agents moving, 
-    usIDs <- schelling[(unsatisfied), id] # origin
+    usIDs <- schelling[(unsatisfied), id] # finds the origin of the agents moving
     
-    # finds available IDs for each household moving
-    availIDs <<- sort(c(emptyIDs, usIDs))
+    availIDs <<- sort(c(emptyIDs, usIDs)) # finds available IDs for each household moving
     
-    #subfunction to find nearest available cell
+    #subfunction to find available cells within specified distance limit
     find.available <- function(cell, avails, lim){
       distance <- c(NULL) #cast empty vector to fill with distances to available cells
       for(i in 1:length(avails)){
         #fill distances vector with absolute values of distance (to keep all values positive) between current cell and each available cell
         distance[i] <- abs(schelling[id == cell, x] - schelling[id == avails[i], x]) + abs(schelling[id == cell, y] - schelling[id == avails[i], y])
       }
-      a <- as.data.frame(cbind(avails, distance)) #specify distance from current cell to each availablec cell
+      a <- as.data.frame(cbind(avails, distance)) #specify distance from current cell to each available cell
       options <- with(a, avails[distance > 0 & distance <= lim]) #pare down options to cells less than or equal to limited number of moves
       if(length(options >= 1)){
         target.id <- sample(options, size = 1)
@@ -278,7 +278,6 @@ iterate_wrapped_limit <- function(n = 10, dom_sim_threshold = .5, min_sim_thresh
       availIDs <<- avails[-which(avails == target.id)]
       return(avails[which(avails == target.id)])
     }
-    
 
     # cast a new data.table showing migration from origin_id to target-id
     transition <- data.table(origin = usIDs, 
@@ -306,10 +305,12 @@ iterate_wrapped_limit <- function(n = 10, dom_sim_threshold = .5, min_sim_thresh
   plotSchelling(title = paste0("Schelling Segregation Model after ", n, " Iterations (Wrapped)"))
 }
 
+#Test it out
 initiateSchelling_wrapped(dimensions = c(20,20), n_races = 2, perc_maj = .7)
 plotSchelling(title = "Schelling")
 iterate_wrapped_limit(dom_sim_threshold = .5, min_sim_threshold = .5, limit = 4)
 
+#Plot pct unsatisfied over time
 for(i in 1:length(ratios.unsatisfied)){
   if(i==1){
     plot(-100, -100, xlim=c(1,10), ylim=c(0,1), 
