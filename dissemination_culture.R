@@ -1,4 +1,4 @@
-#Dissemination of Culture Replication (from Axelrod 1997)
+# Dissemination of Culture Replication (from Axelrod 1997)
 # Model specifies a world of x by x dimensions
 # Each cell in the world is a numeric vector of x number of features, and each feature takes on one of x number of traits per feature
 # In each step, one cell picked at random interacts with a randomly selected Von Neumann neighbor
@@ -8,6 +8,7 @@
 library(RColorBrewer)
 myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")))
 
+# Initiate world with a function that specifies number of agents, features per agent, and traits per feature
 dc.matrix <- function(dimension = 10, features = 5, traits = 10){
   dimension <<- dimension
   features <<- features
@@ -19,6 +20,7 @@ dc.matrix <- function(dimension = 10, features = 5, traits = 10){
   return(world)
 }
 
+# Within initiated world, set function governing interaction rules
 disseminate <- function(mat){
   # Select two cells to interact. Random number between 1 and dimension
   first.cell.row <- round(runif(1)*(dimension)+0.5)
@@ -32,20 +34,21 @@ disseminate <- function(mat){
     second.cell.column <- first.cell.column + sample(c(-1, 0, 1), 1)
   }
   
-  #Wrap world
+  #Wrap world (so second cell can't be outside of the universe)
   second.cell.row[second.cell.row==0] <- dimension
   second.cell.row[second.cell.row==dimension+1] <- 1
   second.cell.column[second.cell.column==0] <- dimension
   second.cell.column[second.cell.column==dimension+1] <- 1
   
-  #Calculate probability of successful interaction
+  # Calculate probability of successful interaction
+    # Agents interact with probability p equal to the percentage of traits they already share
   matches <- NULL
   for(i in 1:features){
     matches <- c(matches, substring(mat[first.cell.row, first.cell.column],i,i) == substring(mat[second.cell.row, second.cell.column],i,i))
   }
   probability.of.interaction <- sum(matches)/features
   
-  #Change second cell by 1 unit in direction of difference, with given probability
+  # Select the first element of the neighbor that doesn't match the selected agent, to change if the agents interact
   element.to.change <- NA
       for(i in 1:features){
         if(substring(mat[first.cell.row, first.cell.column],i,i) != substring(mat[second.cell.row, second.cell.column],i,i)){
@@ -53,15 +56,17 @@ disseminate <- function(mat){
       break
         }
       }
-  
+  # If there is an element to change, and if the agents interact, first agent gives its selected trait to the second agent
   if(!is.na(element.to.change) & probability.of.interaction > runif(1)){
     substring(mat[second.cell.row, second.cell.column], element.to.change, element.to.change) <- substring(mat[first.cell.row, first.cell.column], element.to.change, element.to.change)
   }
   return(mat)
 }
 
+#Set function to track cultural similarity and prevalence of types
 aps <- function(dimension){
   require(data.table)
+  # Initiate data table giving each agent an id and x/y coordinate
   space <<- data.table(id = 1:prod(dimension*dimension),
                        x = rep(1:dimension, dimension),
                        y = rep(1:dimension, each = dimension),
@@ -69,19 +74,24 @@ aps <- function(dimension){
                        pctsim = rep(NA, prod(dimension*dimension)),
                        color = rep(NA, prod(dimension*dimension)))
   
+  # Copy agent's cultural tags over from world matrix
   for(i in 1:10){
     for(j in 1:10){
       space$cult[space$x == i & space$y == j] <<- culture[i,j]
     }
   }
+  # Set agent's "type" (color) as being their first feature/trait
   space$color <<- substring(space$cult, 1,1)
   
+  # Subfunction to return percentage of cultural similarity between an agent and its neighbors
   sims <- function(x_value, y_value){
     cur_id <- space[x == x_value & y == y_value, id]
     
+    # Sub-subfunction to identify agent's neighbors (wrapped)
     select.neighbors <- function(dimension){
       neighbors <- as.data.frame(matrix(NA, nrow = 8, ncol = 2))
       
+      # Fill neighbor matrix
       if(x_value == 1 & y_value == 1){
         neighbors[1,] <- space[x == dimension & y == y_value+1, 2:3]
         neighbors[2,] <- space[x == x_value & y == y_value+1, 2:3]
@@ -174,6 +184,7 @@ aps <- function(dimension){
       }
       names(neighbors) <- c("x","y") 
       
+      # Extract ids and discard agent's id
       ids <- space[x %in% neighbors$x & y %in% neighbors$y, id]
       ids <- ids[! ids %in% space[x == x_value & y == y_value, id]]
       
@@ -181,32 +192,40 @@ aps <- function(dimension){
     }
     
     neighbor.ids <- select.neighbors(dimension = dimension)
+    
+    # Set empty vector to fill
     sim <- NULL
+    # Check each feature of each neighbor and return TRUE if match and FALSE if mismatch
     for(i in 1:length(neighbor.ids)){
-      for(j in 1:5){
+      for(j in 1:features){
         sim <- c(sim, substring(culture[x_value, y_value],j,j) == substring(space[neighbor.ids[i], cult],j,j))
       }
     }
+    # Return percentage of matches
     return(sum(sim)/length(sim))
   }
   
+  # Calculate percent similar for each agent
   for(i in 1:length(space$pctsim)){
     space$pctsim[i] <<- sims(x_value = space$x[i], y_value = space$y[i])
   }
+  
+  # Return average cultural similarity across world
   return(mean(space$pctsim))
 }
 
+# Plot the world
 plotCulture <- function(title){
   require(data.table)
   require(ggplot2)
   require(RColorBrewer)
-  # get races to get the right number of colors
+  # get number of existing traits to get the right number of colors
   traits <- as.numeric(unique(substring(space$cult, 1,1)))
   
   # find the dimensions of the grid to get the best dot size
   dims <- c(max(space$x), max(space$y))
 
-  # plot the graph  
+  # plot percent similarity (gradiented by color)
   p <- ggplot(data = space, 
               aes(x = x, y = y, color = pctsim)) + 
     # resize dots to grid
@@ -243,6 +262,13 @@ aps(dimension = 10)
 culture1 <- culture
 
 plotCulture(title = "First")
+
+# Iterate
+for(iterations in 1:10000){
+  culture <- disseminate(culture)
+}
+aps(dimension = 10)
+plotCulture(title = "10000 iterations later")
 
 for(iterations in 1:10000){
   culture <- disseminate(culture)
