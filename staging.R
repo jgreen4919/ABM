@@ -86,8 +86,7 @@ iterate <- function(iterations, grate = 1){
 #######
 
 if(rule == "cone"){
-  coords <- c(NA, NA)
-  xs <- c(col)
+  coords <- rbind(c(col, row+1), c(col, row-1))
   dis <- 1
   for(i in (row+1):dim){
     y <- i
@@ -98,13 +97,11 @@ if(rule == "cone"){
     dis <- dis+1
   }
   coords[,1] <- sapply(coords[,1], function(x) {
-    if(x < 1){x <- 1}
-    else{x}
+    ifelse(x < 1, 1, x)
   })
   coords <- unique(coords)
   
   see.ids <- aud[x %in% coords[,1] & y %in% coords[,2], id]
-  see.ids <- see.ids[! see.ids %in% aud[x == col & y == row, id]]
   pct.stand <- sum(aud[id %in% see.ids, stand])/length(unique(see.ids))
   return(pct.stand > aud[x == col & y == row, st])
 }
