@@ -17,9 +17,9 @@ do.aud <- function(dim = 20, qual = .7, qualvar = .2,
   require(msm)
   require(data.table)
   pctstanding <<- c(NULL) # Vector to fill later for percent of audience standing
-  
+
   # Matrices for quality, quality threshold and social threshold
-  quality <- matrix(data=rtnorm(dim^2, mean = qual, sd = var, lower = 0, upper = 1), nrow=dim, ncol=dim)
+  quality <- matrix(data=rtnorm(dim^2, mean = qual, sd = qualvar, lower = 0, upper = 1), nrow=dim, ncol=dim)
   quality.threshold <- matrix(data=rtnorm(dim^2, mean = qualt, sd = qualtvar, lower = .7, upper = 1), nrow=dim, ncol=dim)
   social.threshold <- matrix(data=rtnorm(dim^2, mean = soct, sd = soctvar, lower = .05, upper = .8), nrow=dim, ncol=dim)
   
@@ -86,53 +86,61 @@ plotStand <- function(title){
 
 # Function governing interaction rules between agents
   # Takes agent's row number, column number, audience dimension, and vision rule
-do.stand <- function(row, col, dim = 20, stand.rule = c("five","global")){
-  if(aud[x == row & y == col, stand] == TRUE){
+
+do.stand <- function(row, col, dim = 20, stand.rule = c("five","cone","global")){
+  if(aud[x == col & y == row, stand] == TRUE){
     return(TRUE) # If agent is standing, they stay standing
   }
   else{
     rule <- sample(stand.rule, 1) # Pick a vision rule at random (if one vision rule is specified in function call, will sample from vector of length 1)
     # Return percent of standing agents in field of vision, depending on selected rule
     if(rule == "five"){
-      neighbor.ids <- c(NULL)
-      if(row %in% 1:(dim-1) & col == 1){
-        neighbor.ids[1] <- aud[x == row+1 & y == col, id]
-        neighbor.ids[2] <- aud[x == row & y == col+1, id]
-        neighbor.ids[3] <- aud[x == row+1 & y == col+1, id]
+      x_vals <- c(col+1, col, col-1)
+      x_vals <- unique(sapply(x_vals, function(x) {
+        if(x < 1){x <- 1} 
+        if(x > dim){x <- dim} 
+        else{x}
+        }))
+
+      y_vals <- c(row, row+1)
+      y_vals <- unique(sapply(y_vals, function(x) {
+        if(x > dim){x <- dim}
+        else{x}
+        }))
+
+      neighbor.ids <- aud[x %in% x_vals & y %in% y_vals, id]
+      neighbor.ids <- neighbor.ids[! neighbor.ids %in% aud[x == col & y == row, id]]
+      pct.stand <- sum(aud[id %in% neighbor.ids, stand])/length(unique(neighbor.ids))
+      return(pct.stand > aud[x == col & y == row, st])
+    }
+    if(rule == "cone"){
+      coords <- rbind(c(col, row+1), c(col, row-1))
+      dis <- 1
+      for(i in (row+1):dim){
+        y <- i
+        x_vals <- c((col-dis):(col+dis))
+        for(j in 1:length(x_vals)){
+          coords <- rbind(coords, c(x_vals[j], y))
+        }
+        dis <- dis+1
       }
-      if(row %in% 1:(dim-1) & col == dim){
-        neighbor.ids[1] <- aud[x == row+1 & y == col, id]
-        neighbor.ids[2] <- aud[x == row & y == col-1, id]
-        neighbor.ids[3] <- aud[x == row+1 & y == col-1, id]
-      }
-      if(row == dim & col == 1){
-        neighbor.ids[1] <- aud[x == row & y == col+1, id]
-      }
-      if(row == dim & col == dim){
-        neighbor.ids[1] <- aud[x == row & y == col-1, id]
-      }
-      if(row == dim & col %in% 2:(dim-1)){
-        neighbor.ids[1] <- aud[x == row & y == col+1, id]
-        neighbor.ids[2] <- aud[x == row & y == col-1, id]
-      }
-      if(row %in% 1:(dim-1) & col %in% 2:(dim-1)){
-        neighbor.ids[1] <- aud[x == row & y == col-1, id]
-        neighbor.ids[2] <- aud[x == row & y == col+1, id]
-        neighbor.ids[3] <- aud[x == row+1 & y == col-1, id]
-        neighbor.ids[4] <- aud[x == row+1 & y == col, id]
-        neighbor.ids[5] <- aud[x == row+1 & y == col+1, id]
-      }
-      pct.stand <- sum(aud[id %in% neighbor.ids, stand])/length(neighbor.ids)
-      return(pct.stand > aud[x == row & y == col, st])
+      coords[,1] <- sapply(coords[,1], function(x) {
+        ifelse(x < 1, 1, x)
+      })
+      coords <- unique(coords)
+      
+      see.ids <- aud[x %in% coords[,1] & y %in% coords[,2], id]
+      pct.stand <- sum(aud[id %in% see.ids, stand])/length(unique(see.ids))
+      return(pct.stand > aud[x == col & y == row, st])
     }
     if(rule == "global"){
-      return(mean(aud$stand) > aud[x == row & y == col, st])
+      return(mean(aud$stand) > aud[x == col & y == row, st])
     }
   }
 }
 
 # Function to iterate through a specified number of rounds. Sets vision rule for do.stand() to inherit
-iterate <- function(iterations, stand.rule = c("five", "global")){
+iterate <- function(iterations, stand.rule = c("five", "cone", "global")){
   for(i in 1:iterations){
     aud[,stand := do.stand(row = x, col = y, dim = 20, stand.rule = stand.rule),
         by = 1:nrow(aud)] # Update standing status for each audience member in each iteration
@@ -143,7 +151,7 @@ iterate <- function(iterations, stand.rule = c("five", "global")){
 
 do.aud()
 plotStand(title = "Audience Immediately After Performance Ends")
-iterate(iterations = 1, stand.rule = "five")
+iterate(iterations = 1, stand.rule = "cone")
 pctstanding
 
 sitid <- aud[stand == FALSE, id]
