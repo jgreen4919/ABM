@@ -1,6 +1,16 @@
-# Initiates world of x by x dimensions, populated by agnets with desity d. 
-# Each cell in the world has a sugar capacity c. 
-# Each agents has an id, vision ranging from 1 to maxviz, and a store of sugar.
+# Sugarscape replication (from Epstein and Axtell 1996)
+# Initiates world of x by x dimensions populated by agents with density d.
+# Each cell in the world has a sugar capacity c.
+# Each agent has a vision between 1 and maxviz, and a store of sugar.
+# In each round, each cell grows sugar at rate grate unless it is at capacity.
+  # Agents look around, determine which available cell in their field of vision has the most sugar, move there, and harvest the sugar
+  # Sugar stores are then decremented by the agent's metabolic rate
+
+
+# The first function initiates world of x by x dimensions, populated by agnets with desity d. 
+# Each cell in the world has a sugar capacity c and initially has c amount of sugar. 
+# Each agent has an id, vision ranging from 1 to maxviz, and a store of sugar s.
+  # When world is initialized, agent harvests the sugar in their initial cell
 
 do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, maxviz = 3, characteristics = c("id","vision","sugar")){
   require(data.table)
@@ -40,7 +50,7 @@ do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, maxviz = 3, cha
                        x = rep(1:dim, dim),
                        y = rep(1:dim, each = dim),
                        cellsugar = rep(NA, prod(dim*dim)),
-                       cellcap = rep(capacity, prod(dim*dim)),
+                       cellcap = rep(NA, prod(dim*dim)),
                        agid = rep(NA, prod(dim*dim)),
                        agviz = rep(NA, prod(dim*dim)),
                        agsugar = rep(NA, prod(dim*dim))
@@ -49,11 +59,13 @@ do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, maxviz = 3, cha
   for(i in 1:dim){
     for(j in 1:dim){
       scape$cellsugar[scape$x == i & scape$y == j] <<- sugar[i,j]
+      scape$cellcap[scape$x == i & scape$y == j] <<- sugar[i,j]
       scape$agid[scape$x == i & scape$y == j] <<- agents[i,j,1]
       scape$agviz[scape$x == i & scape$y == j] <<- agents[i,j,2]
       scape$agsugar[scape$x == i & scape$y == j] <<- agents[i,j,3]
     }
   }
+
   # Agents harvest whatever sugar is in the cell they are populated to
   for(i in 1:length(scape$cellsugar)){
     if(!is.na(scape$agsugar[i])){
@@ -112,6 +124,7 @@ plotScape <- function(title = "Sugarscape"){
 # Function specifying interaction rules for each round. Sugar grows back in cells at rate grate.
 iterate <- function(iterations, capacity = 4, grate = 1, metabolism = 1){
   for(i in iterations){
+    # Grow sugar
     scape$cellsugar <<- scape$cellsugar+1
     scape$cellsugar[scape$cellsugar >= capacity] <<- capacity
     
@@ -132,6 +145,7 @@ iterate <- function(iterations, capacity = 4, grate = 1, metabolism = 1){
       see.ids <- c(scape[x == x_value & y %in% y_vals, cellid], scape[x %in% x_vals & y == y_value, cellid]) # Cells agents can see
       see.ids <- see.ids[! see.ids %in% transition[,target]] # Minus cells other agents have already decided to move to
       
+      # Find the cell with the most sugar within the available cells the agent sees
       newcell <- scape[cellid %in% see.ids & is.na(agid) & cellsugar %in% max(unlist(scape[cellid %in% see.ids, cellsugar])), cellid]
       
       if(length(newcell) > 1){
@@ -147,6 +161,7 @@ iterate <- function(iterations, capacity = 4, grate = 1, metabolism = 1){
     
     transition <- subset(scape, !is.na(agid), c(1:3,6:8)) # Placeholder data table to track movement
     transition[,target := rep(NA, nrow(transition))]
+    # Determine where each agent is moving
     for(i in 1:nrow(transition)){
       transition$target[i] <- pickcell(x_value = transition$x[i], y_value = transition$y[i], 
                                        maxviz = transition$agviz[i], dimension = max(scape$x))
@@ -168,7 +183,7 @@ iterate <- function(iterations, capacity = 4, grate = 1, metabolism = 1){
         scape$cellsugar[i] <<- scape$cellsugar[i] - s
       }
     }
-    scape$agsugar <<- with(scape, ifelse(!is.na(agsugar), agsugar - 1, agsugar)) # decrement agent sugar by metabolic rate
+    scape$agsugar <<- with(scape, ifelse(!is.na(agsugar), agsugar - metabolism, agsugar)) # decrement agent sugar by metabolic rate
     #Update agent array
     for (i in 1:max(scape$x)){
       for (j in 1:max(scape$y)){
