@@ -130,14 +130,16 @@ plotScape <- function(title = "Sugarscape"){
 
 # Function specifying interaction rules for each round. Sugar grows back in cells at rate grate.
 iterate <- function(iterations, capacity = 4){
+  require(reldist)
   n_agents <- nrow(scape[agid > 0]) # Store initial number of agents
   mean_vision <- mean(scape$agviz, na.rm = T) # Store initial mean population vision
   mean_metab <- mean(scape$agmetab, na.rm = T) # Store initial mean population metabolism
+  gcoef <- gini(scape$agsugar[!is.na(scape$agsugar)]) # Store initial Gini coefficient
   for(i in 1:iterations){
     # Grow sugar
     scape$cellsugar <<- with(scape, cellsugar + cellgrate)
     scape$cellsugar <<- ifelse(scape$cellsugar > scape$cellcap, scape$cellcap, scape$cellsugar)
-    
+
     # Subfunction for agents to pick cell to move to (wrapped world)
     pickcell <- function(x_value, y_value, maxviz, dimension){
       x_vals <- c((x_value+1):(x_value+maxviz), (x_value-1):(x_value-maxviz))
@@ -155,11 +157,16 @@ iterate <- function(iterations, capacity = 4){
       see.ids <- c(scape[x == x_value & y %in% y_vals, cellid], scape[x %in% x_vals & y == y_value, cellid]) # Cells agents can see
       see.ids <- see.ids[! see.ids %in% transition[,target]] # Minus cells other agents have already decided to move to
       
-      # Find the cell with the most sugar within the available cells the agent sees
+      # Find the cell(s) with the most sugar within the available cells the agent sees
       newcell <- scape[cellid %in% see.ids & is.na(agid) & cellsugar %in% max(unlist(scape[cellid %in% see.ids, cellsugar])), cellid]
-      
+      dist <- c(NULL)
+      for(i in 1:length(newcell)){
+        dist[i] <- abs(scape[x == x_value & y == y_value, x] - scape[cellid %in% newcell[i], x]) + 
+          abs(scape[x == x_value & y == y_value, y] - scape[cellid %in% newcell[i], y])
+      }
+      newcell <- newcell[which.min(dist)] #
       if(length(newcell) > 1){
-        return(newcell[1]) # If multiple cells have max available sugar, pick the first one
+        return(newcell[1]) # If multiple cells have max available sugar at equal distances, pick first one listed
       }
       if(length(newcell) == 0){
         return(scape[x == x_value & y == y_value, cellid]) # If no available cell, stay put
@@ -195,13 +202,14 @@ iterate <- function(iterations, capacity = 4){
     }
     scape$agsugar <<- with(scape, ifelse(!is.na(agsugar), agsugar - agmetab, agsugar)) # decrement agent sugar by metabolic rate
     scape[agsugar <= 0, 7:10] <<- NA # Agents that run out of sugar die
-    n_agents <- c(n_agents, nrow(scape[agid > 0])) # Update number of agents
-    mean_vision <- c(mean_vision, mean(scape$agviz, na.rm = T)) # Update mean population vision
-    mean_metab <- c(mean_metab, mean(scape$agmetab, na.rm = T)) # Update mean population metabolism
+    n_agents <- c(n_agents, nrow(scape[agid > 0])) # Store new number of agents
+    mean_vision <- c(mean_vision, mean(scape$agviz, na.rm = T)) # Store new mean population vision
+    mean_metab <- c(mean_metab, mean(scape$agmetab, na.rm = T)) # Store new mean population metabolism
+    gcoef <- c(gcoef, gini(scape$agsugar[!is.na(scape$agsugar)])) # Store new gini coefficient
   }
   # Store vectors of characteristics in a list and return them
-  returns <- list(n_agents, mean_vision, mean_metab)
-  names(returns) <- c("agents","mean.vision", "mean.metabolism")
+  returns <- list(n_agents, mean_vision, mean_metab, gcoef)
+  names(returns) <- c("agents","mean.vision", "mean.metabolism", "Gini")
   return(returns)
 }
 
@@ -214,7 +222,6 @@ do.sugarscape(metabolism = 2:4)
 run3 <- iterate(iterations= 50)
 do.sugarscape(maxviz = 5)
 run4 <- iterate(iterations= 50)
-
 
 # Track population characteristics over time, by run
 
@@ -231,25 +238,36 @@ for(i in 1:length(run1$agents)){
 }
 
 # Mean vision
-for(i in 1:length(run1$`mean vision`)){
+for(i in 1:length(run1$mean.vision)){
   if(i == 1){
     plot(-100, -100, xlim=c(1,50), ylim=c(1,5), ylab="Mean Vision", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Vision")
   }else{
-    segments(i-1, run1$`mean vision`[i-1], i, run1$`mean vision`[i], col = "green", lwd=2)
-    segments(i-1, run2$`mean vision`[i-1], i, run2$`mean vision`[i], col = "blue", lwd=2)
-    segments(i-1, run3$`mean vision`[i-1], i, run3$`mean vision`[i], col = "red", lwd=2)
-    segments(i-1, run4$`mean vision`[i-1], i, run4$`mean vision`[i], col = "orange", lwd=2)
+    segments(i-1, run1$mean.vision[i-1], i, run1$mean.vision[i], col = "green", lwd=2)
+    segments(i-1, run2$mean.vision[i-1], i, run2$mean.vision[i], col = "blue", lwd=2)
+    segments(i-1, run3$mean.vision[i-1], i, run3$mean.vision[i], col = "red", lwd=2)
+    segments(i-1, run4$mean.vision[i-1], i, run4$mean.vision[i], col = "orange", lwd=2)
   }
 }
 
 # Mean metabolism
-for(i in 1:length(run1$`mean metabolism`)){
+for(i in 1:length(run1$mean.metabolism)){
   if(i == 1){
     plot(-100, -100, xlim=c(1,50), ylim=c(2,5), ylab="Mean Metabolism", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Metabolism")
   }else{
-    segments(i-1, run1$`mean metabolism`[i-1], i, run1$`mean metabolism`[i], col = "green", lwd=2)
-    segments(i-1, run2$`mean metabolism`[i-1], i, run2$`mean metabolism`[i], col = "blue", lwd=2)
-    segments(i-1, run3$`mean metabolism`[i-1], i, run3$`mean metabolism`[i], col = "red", lwd=2)
-    segments(i-1, run4$`mean metabolism`[i-1], i, run4$`mean metabolism`[i], col = "orange", lwd=2)
+    segments(i-1, run1$mean.metabolism[i-1], i, run1$mean.metabolism[i], col = "green", lwd=2)
+    segments(i-1, run2$mean.metabolism[i-1], i, run2$mean.metabolism[i], col = "blue", lwd=2)
+    segments(i-1, run3$mean.metabolism[i-1], i, run3$mean.metabolism[i], col = "red", lwd=2)
+    segments(i-1, run4$mean.metabolism[i-1], i, run4$mean.metabolism[i], col = "orange", lwd=2)
+  }
+}
+
+for(i in 1:length(run1$Gini)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,50), ylim=c(2,5), ylab="Gini Coefficient", xlab="Iteration", type="n", cex.axis=0.8, main = "Wealth Inequality")
+  }else{
+    segments(i-1, run1$Gini[i-1], i, run1$Gini[i], col = "green", lwd=2)
+    segments(i-1, run2$Gini[i-1], i, run2$Gini[i], col = "blue", lwd=2)
+    segments(i-1, run3$Gini[i-1], i, run3$Gini[i], col = "red", lwd=2)
+    segments(i-1, run4$Gini[i-1], i, run4$Gini[i], col = "orange", lwd=2)
   }
 }
