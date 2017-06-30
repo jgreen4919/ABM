@@ -139,7 +139,7 @@ iterate <- function(iterations, capacity = 4){
     # Grow sugar
     scape$cellsugar <<- with(scape, cellsugar + cellgrate)
     scape$cellsugar <<- ifelse(scape$cellsugar > scape$cellcap, scape$cellcap, scape$cellsugar)
-
+    
     # Subfunction for agents to pick cell to move to (wrapped world)
     pickcell <- function(x_value, y_value, maxviz, dimension){
       x_vals <- c((x_value+1):(x_value+maxviz), (x_value-1):(x_value-maxviz))
@@ -158,15 +158,20 @@ iterate <- function(iterations, capacity = 4){
       see.ids <- see.ids[! see.ids %in% transition[,target]] # Minus cells other agents have already decided to move to
       
       # Find the cell(s) with the most sugar within the available cells the agent sees
-      newcell <- scape[cellid %in% see.ids & is.na(agid) & cellsugar %in% max(unlist(scape[cellid %in% see.ids, cellsugar])), cellid]
-      dist <- c(NULL)
-      for(i in 1:length(newcell)){
-        dist[i] <- abs(scape[x == x_value & y == y_value, x] - scape[cellid %in% newcell[i], x]) + 
-          abs(scape[x == x_value & y == y_value, y] - scape[cellid %in% newcell[i], y])
+      if(length(see.ids) > 0){
+        newcell <- scape[cellid %in% see.ids & is.na(agid) & cellsugar == max(scape[cellid %in% see.ids, cellsugar]), cellid]
+      }else{
+        return(scape[x == x_value & y == y_value, cellid]) #If all cells in field of vision are taken, stay put
       }
-      newcell <- newcell[which.min(dist)] #
+      
       if(length(newcell) > 1){
-        return(newcell[1]) # If multiple cells have max available sugar at equal distances, pick first one listed
+        dist <- sapply(1:length(newcell), function(a){
+          abs(scape[x == x_value & y == y_value, x] - scape[cellid %in% newcell[a], x]) + 
+            abs(scape[x == x_value & y == y_value, y] - scape[cellid %in% newcell[a], y])
+        })
+        
+        newcell <- newcell[which.min(dist)]
+        return(newcell) # If multiple available cells with max sugar, return nearest (if equadistant, pick first)
       }
       if(length(newcell) == 0){
         return(scape[x == x_value & y == y_value, cellid]) # If no available cell, stay put
@@ -263,7 +268,7 @@ for(i in 1:length(run1$mean.metabolism)){
 
 for(i in 1:length(run1$Gini)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,50), ylim=c(2,5), ylab="Gini Coefficient", xlab="Iteration", type="n", cex.axis=0.8, main = "Wealth Inequality")
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,1), ylab="Gini Coefficient", xlab="Iteration", type="n", cex.axis=0.8, main = "Wealth Inequality")
   }else{
     segments(i-1, run1$Gini[i-1], i, run1$Gini[i], col = "green", lwd=2)
     segments(i-1, run2$Gini[i-1], i, run2$Gini[i], col = "blue", lwd=2)
