@@ -15,6 +15,11 @@
 do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, grate = 1, 
                           maxviz = 3, r_endow = 5:25, metabolism = 3:5,
                           characteristics = c("id","vision","sugar","metabolism")){
+  side <<- dim
+  characteristics <<- characteristics
+  r_endow <<- r_endow
+  metabolism <<- metabolism
+  
   require(data.table)
   sugar <- matrix(NA, nrow = dim, ncol = dim)
   for(i in 1:length(sugar)){
@@ -22,7 +27,7 @@ do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, grate = 1,
   }
   
   n_agents <- round(dim*dim*popdens) # Set number of agents
-  
+
   a <- matrix(NA, nrow = dim, ncol = dim)
   for(i in 1:length(a)){
     a[i] <- sample(1:(dim*dim), 1, replace = F) # Set cells that will be populated by agents
@@ -45,6 +50,7 @@ do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, grate = 1,
         agents[i,j,1] <<- NA
         agents[i,j,2] <<- NA
         agents[i,j,3] <<- NA
+        agents[i,j,4] <<- NA
       }
     }
   }  
@@ -71,6 +77,7 @@ do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, grate = 1,
       scape$agsugar[scape$x == i & scape$y == j] <<- agents[i,j,3]
     }
   }
+  max.agid <<- max(scape$agid, na.rm = T) # Store the max agid to manipulate later
   
   # Agents harvest whatever sugar is in the cell they are populated to
   for(i in 1:length(scape$cellsugar)){
@@ -128,8 +135,13 @@ plotScape <- function(title = "Sugarscape"){
 }
 
 # Function specifying interaction rules for each round. Sugar grows back in cells at rate grate.
-iterate <- function(iterations, capacity = 4){
-  n_agents <- c(nrow(scape[agid > 0]))
+iterate <- function(iterations){
+  require(reldist)
+  require(msm)
+
+  mean_vision <- mean(scape$agviz, na.rm = T) # Store initial mean population vision
+  mean_metab <- mean(scape$agmetab, na.rm = T) # Store initial mean population metabolism
+  gcoef <- gini(scape$agsugar[!is.na(scape$agsugar)]) # Store initial Gini coefficient
   for(i in 1:iterations){
     # Grow sugar
     scape$cellsugar <<- with(scape, cellsugar + cellgrate)
@@ -152,11 +164,21 @@ iterate <- function(iterations, capacity = 4){
       see.ids <- c(scape[x == x_value & y %in% y_vals, cellid], scape[x %in% x_vals & y == y_value, cellid]) # Cells agents can see
       see.ids <- see.ids[! see.ids %in% transition[,target]] # Minus cells other agents have already decided to move to
       
-      # Find the cell with the most sugar within the available cells the agent sees
-      newcell <- scape[cellid %in% see.ids & is.na(agid) & cellsugar %in% max(unlist(scape[cellid %in% see.ids, cellsugar])), cellid]
+      # Find the cell(s) with the most sugar within the available cells the agent sees
+      if(length(see.ids) > 0){
+        newcell <- scape[cellid %in% see.ids & is.na(agid) & cellsugar == max(scape[cellid %in% see.ids, cellsugar]), cellid]
+      }else{
+        return(scape[x == x_value & y == y_value, cellid]) #If all cells in field of vision are taken, stay put
+      }
       
       if(length(newcell) > 1){
-        return(newcell[1]) # If multiple cells have max available sugar, pick the first one
+        dist <- sapply(1:length(newcell), function(a){
+          abs(scape[x == x_value & y == y_value, x] - scape[cellid %in% newcell[a], x]) + 
+            abs(scape[x == x_value & y == y_value, y] - scape[cellid %in% newcell[a], y])
+        })
+        
+        newcell <- newcell[which.min(dist)]
+        return(newcell) # If multiple available cells with max sugar, return nearest (if equadistant, pick first)
       }
       if(length(newcell) == 0){
         return(scape[x == x_value & y == y_value, cellid]) # If no available cell, stay put
@@ -165,10 +187,9 @@ iterate <- function(iterations, capacity = 4){
         return(newcell)
       }
     }
-    
+
     transition <- subset(scape, !is.na(agid), c(1:3,7:10)) # Placeholder data table to track movement
     transition[,target := rep(NA, nrow(transition))]
-    # Determine where each agent is moving
     for(t in 1:nrow(transition)){
       transition$target[t] <- pickcell(x_value = transition$x[t], y_value = transition$y[t], 
                                        maxviz = transition$agviz[t], dimension = max(scape$x))
@@ -177,8 +198,8 @@ iterate <- function(iterations, capacity = 4){
     # move agents to the new cells
     for(n in 1:nrow(scape)){
       if(scape$cellid[n] %in% transition[,target]){
-        scape[transition[scape$cellid[n] == target, cellid], 7:10] <- NA
-        scape[n,7:10] <- transition[target == n, 4:7]
+        scape[transition[scape$cellid[n] == target, cellid], 7:10] <<- NA
+        scape[n,7:10] <<- transition[target == n, 4:7]
       }
     }
     
@@ -186,19 +207,44 @@ iterate <- function(iterations, capacity = 4){
     for(s in 1:nrow(scape)){
       if(!is.na(scape$agid[s])){
         su <- scape$cellsugar[s]
-        scape$agsugar[s] <- scape$agsugar[s] + su
-        scape$cellsugar[s] <- scape$cellsugar[s] - su
+        scape$agsugar[s] <<- scape$agsugar[s] + su
+        scape$cellsugar[s] <<- scape$cellsugar[s] - su
       }
     }
-    scape$agsugar <- with(scape, ifelse(!is.na(agsugar), agsugar - agmetab, agsugar)) # decrement agent sugar by metabolic rate
-    scape[agsugar == 0, 7:10] <- NA
-    n_agents <- c(n_agents, nrow(scape[agid > 0]))
+
+    scape$agsugar <<- with(scape, ifelse(!is.na(agsugar), agsugar - agmetab, agsugar)) # decrement agent sugar by metabolic rate
+    
+    turnover <- nrow(scape[agsugar <= 0]) # How many agents have run out of sugar
+    scape[agsugar <= 0, 7:10] <<- NA # Agents that run out of sugar die
+    
+    new.cells <- sample(scape[is.na(agid), cellid], turnover, replace = F) # Find as many new cells to populate with new agents as there are agents who died this round
+
+    # Populate new agents
+    for(a in 1:length(new.cells)){
+      scape$agid[scape$cellid == new.cells[a]] <<- max.agid+a
+      scape$agviz[scape$cellid == new.cells[a]] <<- round(rtnorm(1, mean = mean(scape$agviz, na.rm = T),
+                                                       sd = sd(scape$agviz, na.rm = T),
+                                                       lower = 1, upper = max(scape$agviz, na.rm = T)))
+      scape$agmetab[scape$cellid == new.cells[a]] <<- round(rtnorm(1, mean = mean(scape$agmetab, na.rm = T),
+                                                       sd = sd(scape$agmetab, na.rm = T),
+                                                       lower = 1, upper = max(scape$agmetab, na.rm = T)))
+      scape$agsugar[scape$cellid == new.cells[a]] <<- sample(r_endow, 1)
+    }
+    max.agid <<- max.agid + turnover # Update new max agent id
+    
+    n_agents <- c(n_agents, nrow(scape[agid > 0])) # Store new number of agents
+    mean_vision <- c(mean_vision, mean(scape$agviz, na.rm = T)) # Store new mean population vision
+    mean_metab <- c(mean_metab, mean(scape$agmetab, na.rm = T)) # Store new mean population metabolism
+    gcoef <- c(gcoef, gini(scape$agsugar[!is.na(scape$agsugar)])) # Store new gini coefficient
   }
-  plotScape(title = paste("Sugarscape after ", iterations," rounds of foraging"))
-  return(n_agents)
+  # Store vectors of characteristics in a list and return them
+  returns <- list(n_agents, mean_vision, mean_metab, gcoef)
+  names(returns) <- c("agents","mean.vision", "mean.metabolism", "Gini")
+  return(returns)
 }
 
 do.sugarscape()
-plotScape()
+plotScape(title = "first")
 iterate(iterations = 50)
-
+plotScape(title = "50 later")
+max.agid
