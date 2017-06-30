@@ -245,7 +245,7 @@ iterate <- function(iterations){
 # Vary different characteristics over 50-round runs
 do.sugarscape()
 run1 <- iterate(iterations = 50)
-do.sugarscape(capacity = 5)
+do.sugarscape(capacity = 3)
 run2 <- iterate(iterations = 50)
 do.sugarscape(metabolism = 3:5)
 run3 <- iterate(iterations= 50)
@@ -253,18 +253,6 @@ do.sugarscape(maxviz = 3)
 run4 <- iterate(iterations= 50)
 
 # Track population characteristics over time, by run
-
-# Number of agents (carrying capacity)
-for(i in 1:length(run1$agents)){
-  if(i == 1){
-    plot(-100, -100, xlim=c(1,50), ylim=c(0,700), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
-  }else{
-    segments(i-1, run1$agents[i-1], i, run1$agents[i], col = "green", lwd=2)
-    segments(i-1, run2$agents[i-1], i, run2$agents[i], col = "blue", lwd=2)
-    segments(i-1, run3$agents[i-1], i, run3$agents[i], col = "red", lwd=2)
-    segments(i-1, run4$agents[i-1], i, run4$agents[i], col = "orange", lwd=2)
-  }
-}
 
 # Mean vision
 for(i in 1:length(run1$mean.vision)){
