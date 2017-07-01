@@ -223,7 +223,8 @@ iterate <- function(iterations){
 
 # Vary different characteristics over 50-round runs
 do.sugarscape()
-run1 <- iterate(iterations = 50)
+plotScape()
+run1 <- iterate(iterations = 1)
 do.sugarscape(capacity = 5)
 run2 <- iterate(iterations = 50)
 do.sugarscape(metabolism = 3:5)
