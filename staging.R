@@ -5,21 +5,16 @@
 # In each round, each cell grows sugar at rate grate unless it is at capacity.
 # Agents look around, determine which available cell in their field of vision has the most sugar, move there, and harvest the sugar
 # Sugar stores are then decremented by the agent's metabolic rate
+# If sugar stores fall to at or below zero, agent dies
 
+# Function tracks number of agents, mean vision, mean metabolism, and Gini coefficient by round
 
 # The first function initiates world of x by x dimensions, populated by agnets with desity d. 
 # Each cell in the world has a sugar capacity c and initially has c amount of sugar. 
 # Each agent has an id, vision ranging from 1 to maxviz, and a store of sugar s.
 # When world is initialized, agent harvests the sugar in their initial cell
-
 do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, grate = 1, 
-                          maxviz = 3, r_endow = 5:25, metabolism = 3:5,
-                          characteristics = c("id","vision","sugar","metabolism")){
-  side <<- dim
-  characteristics <<- characteristics
-  r_endow <<- r_endow
-  metabolism <<- metabolism
-  
+                          maxviz = 6, r_endow = 5:25, metabolism = 1:4, characteristics = c("id","vision","sugar","metabolism", "gender", "age")){
   require(data.table)
   sugar <- matrix(NA, nrow = dim, ncol = dim)
   for(i in 1:length(sugar)){
@@ -27,7 +22,7 @@ do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, grate = 1,
   }
   
   n_agents <- round(dim*dim*popdens) # Set number of agents
-
+  
   a <- matrix(NA, nrow = dim, ncol = dim)
   for(i in 1:length(a)){
     a[i] <- sample(1:(dim*dim), 1, replace = F) # Set cells that will be populated by agents
@@ -45,12 +40,16 @@ do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, grate = 1,
         agents[i,j,2] <<- sample(1:maxviz, 1)
         agents[i,j,3] <<- sample(r_endow, 1)
         agents[i,j,4] <<- sample(metabolism, 1)
+        agents[i,j,5] <<- sample(c(1,2), 1)
+        agents[i,j,6] <<- 0
       }
       else{
         agents[i,j,1] <<- NA
         agents[i,j,2] <<- NA
         agents[i,j,3] <<- NA
         agents[i,j,4] <<- NA
+        agents[i,j,5] <<- NA
+        agents[i,j,6] <<- NA
       }
     }
   }  
@@ -62,9 +61,11 @@ do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, grate = 1,
                        cellcap = rep(NA, prod(dim*dim)),
                        cellgrate = rep(grate, prod(dim*dim)),
                        agid = rep(NA, prod(dim*dim)),
+                       aggender = rep(NA, prod(dim*dim)),
                        agviz = rep(NA, prod(dim*dim)),
                        agmetab = rep(NA, prod(dim*dim)),
-                       agsugar = rep(NA, prod(dim*dim))
+                       agsugar = rep(NA, prod(dim*dim)),
+                       agage = rep(0, prod(dim*dim))
   )
   # Copy sugar and agent/agent characteristics over to sugarscape
   for(i in 1:dim){
@@ -72,12 +73,12 @@ do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, grate = 1,
       scape$cellsugar[scape$x == i & scape$y == j] <<- sugar[i,j]
       scape$cellcap[scape$x == i & scape$y == j] <<- sugar[i,j]
       scape$agid[scape$x == i & scape$y == j] <<- agents[i,j,1]
+      scape$aggender[scape$x == i & scape$y == j] <<- agents[i,j,5]
       scape$agviz[scape$x == i & scape$y == j] <<- agents[i,j,2]
       scape$agmetab[scape$x == i & scape$y == j] <<- agents[i,j,4]
       scape$agsugar[scape$x == i & scape$y == j] <<- agents[i,j,3]
     }
   }
-  max.agid <<- max(scape$agid, na.rm = T) # Store the max agid to manipulate later
   
   # Agents harvest whatever sugar is in the cell they are populated to
   for(i in 1:length(scape$cellsugar)){
@@ -89,6 +90,7 @@ do.sugarscape <- function(dim = 50, popdens = .25, capacity = 4, grate = 1,
   }
 }
 
+# The second function plots the sugarscape
 plotScape <- function(title = "Sugarscape"){
   require(data.table)
   require(ggplot2)
@@ -134,14 +136,15 @@ plotScape <- function(title = "Sugarscape"){
   return(p)
 }
 
-# Function specifying interaction rules for each round. Sugar grows back in cells at rate grate.
-iterate <- function(iterations){
+# The last function specifies interaction rules for each round.
+iterate <- function(iterations, maxage = 75){
   require(reldist)
-  require(msm)
-
+  
+  n_agents <- nrow(scape[agid > 0]) # Store initial number of agents
   mean_vision <- mean(scape$agviz, na.rm = T) # Store initial mean population vision
   mean_metab <- mean(scape$agmetab, na.rm = T) # Store initial mean population metabolism
   gcoef <- gini(scape$agsugar[!is.na(scape$agsugar)]) # Store initial Gini coefficient
+  
   for(i in 1:iterations){
     # Grow sugar
     scape$cellsugar <<- with(scape, cellsugar + cellgrate)
@@ -187,9 +190,10 @@ iterate <- function(iterations){
         return(newcell)
       }
     }
-
+    
     transition <- subset(scape, !is.na(agid), c(1:3,7:10)) # Placeholder data table to track movement
     transition[,target := rep(NA, nrow(transition))]
+    # Determine where each agent is moving
     for(t in 1:nrow(transition)){
       transition$target[t] <- pickcell(x_value = transition$x[t], y_value = transition$y[t], 
                                        maxviz = transition$agviz[t], dimension = max(scape$x))
@@ -211,26 +215,9 @@ iterate <- function(iterations){
         scape$cellsugar[s] <<- scape$cellsugar[s] - su
       }
     }
-
     scape$agsugar <<- with(scape, ifelse(!is.na(agsugar), agsugar - agmetab, agsugar)) # decrement agent sugar by metabolic rate
-    
-    turnover <- nrow(scape[agsugar <= 0]) # How many agents have run out of sugar
     scape[agsugar <= 0, 7:10] <<- NA # Agents that run out of sugar die
-    
-    new.cells <- sample(scape[is.na(agid), cellid], turnover, replace = F) # Find as many new cells to populate with new agents as there are agents who died this round
-
-    # Populate new agents
-    for(a in 1:length(new.cells)){
-      scape$agid[scape$cellid == new.cells[a]] <<- max.agid+a
-      scape$agviz[scape$cellid == new.cells[a]] <<- round(rtnorm(1, mean = mean(scape$agviz, na.rm = T),
-                                                       sd = sd(scape$agviz, na.rm = T),
-                                                       lower = 1, upper = max(scape$agviz, na.rm = T)))
-      scape$agmetab[scape$cellid == new.cells[a]] <<- round(rtnorm(1, mean = mean(scape$agmetab, na.rm = T),
-                                                       sd = sd(scape$agmetab, na.rm = T),
-                                                       lower = 1, upper = max(scape$agmetab, na.rm = T)))
-      scape$agsugar[scape$cellid == new.cells[a]] <<- sample(r_endow, 1)
-    }
-    max.agid <<- max.agid + turnover # Update new max agent id
+    scape[agage >= maxage, 7:10] <<- # Agents that reach max age die
     
     n_agents <- c(n_agents, nrow(scape[agid > 0])) # Store new number of agents
     mean_vision <- c(mean_vision, mean(scape$agviz, na.rm = T)) # Store new mean population vision
@@ -243,8 +230,62 @@ iterate <- function(iterations){
   return(returns)
 }
 
+# Vary different characteristics over 50-round runs
 do.sugarscape()
-plotScape(title = "first")
-iterate(iterations = 50)
-plotScape(title = "50 later")
-max.agid
+plotScape()
+run1 <- iterate(iterations = 50)
+do.sugarscape(capacity = 5)
+run2 <- iterate(iterations = 50)
+do.sugarscape(metabolism = 3:5)
+run3 <- iterate(iterations= 50)
+do.sugarscape(maxviz = 3)
+run4 <- iterate(iterations= 50)
+
+# Track population characteristics over time, by run
+
+# Number of agents (carrying capacity)
+for(i in 1:length(run1$agents)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,700), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
+  }else{
+    segments(i-1, run1$agents[i-1], i, run1$agents[i], col = "green", lwd=2)
+    segments(i-1, run2$agents[i-1], i, run2$agents[i], col = "blue", lwd=2)
+    segments(i-1, run3$agents[i-1], i, run3$agents[i], col = "red", lwd=2)
+    segments(i-1, run4$agents[i-1], i, run4$agents[i], col = "orange", lwd=2)
+  }
+}
+
+# Mean vision
+for(i in 1:length(run1$mean.vision)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,50), ylim=c(1,5), ylab="Mean Vision", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Vision")
+  }else{
+    segments(i-1, run1$mean.vision[i-1], i, run1$mean.vision[i], col = "green", lwd=2)
+    segments(i-1, run2$mean.vision[i-1], i, run2$mean.vision[i], col = "blue", lwd=2)
+    segments(i-1, run3$mean.vision[i-1], i, run3$mean.vision[i], col = "red", lwd=2)
+    segments(i-1, run4$mean.vision[i-1], i, run4$mean.vision[i], col = "orange", lwd=2)
+  }
+}
+
+# Mean metabolism
+for(i in 1:length(run1$mean.metabolism)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,5), ylab="Mean Metabolism", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Metabolism")
+  }else{
+    segments(i-1, run1$mean.metabolism[i-1], i, run1$mean.metabolism[i], col = "green", lwd=2)
+    segments(i-1, run2$mean.metabolism[i-1], i, run2$mean.metabolism[i], col = "blue", lwd=2)
+    segments(i-1, run3$mean.metabolism[i-1], i, run3$mean.metabolism[i], col = "red", lwd=2)
+    segments(i-1, run4$mean.metabolism[i-1], i, run4$mean.metabolism[i], col = "orange", lwd=2)
+  }
+}
+
+for(i in 1:length(run1$Gini)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,1), ylab="Gini Coefficient", xlab="Iteration", type="n", cex.axis=0.8, main = "Wealth Inequality")
+  }else{
+    segments(i-1, run1$Gini[i-1], i, run1$Gini[i], col = "green", lwd=2)
+    segments(i-1, run2$Gini[i-1], i, run2$Gini[i], col = "blue", lwd=2)
+    segments(i-1, run3$Gini[i-1], i, run3$Gini[i], col = "red", lwd=2)
+    segments(i-1, run4$Gini[i-1], i, run4$Gini[i], col = "orange", lwd=2)
+  }
+}
