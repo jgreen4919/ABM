@@ -146,14 +146,14 @@ iterate <- function(iterations){
     pickcell <- function(x_value, y_value, maxviz, dimension){
       x_vals <- c((x_value+1):(x_value+maxviz), (x_value-1):(x_value-maxviz))
       x_vals <- sapply(x_vals, function(x){
-        if(x < 1){x = x + dimension} 
-        if(x > dimension){x = x - dimension}
+        if(x < 1){x = 1} 
+        if(x > dimension){x = dimension}
         else{x}})
       
       y_vals <- c((y_value+1):(y_value+maxviz), (y_value-1):(y_value-maxviz))
       y_vals <- sapply(y_vals, function(x){
-        if(x < 1){x = x + dimension}
-        if(x > dimension){x = x - dimension}
+        if(x < 1){x = 1}
+        if(x > dimension){x = dimension}
         else{x}})
       
       see.ids <- c(scape[x == x_value & y %in% y_vals, cellid], scape[x %in% x_vals & y == y_value, cellid]) # Cells agents can see
@@ -224,7 +224,7 @@ iterate <- function(iterations){
 # Vary different characteristics over 50-round runs
 do.sugarscape()
 plotScape()
-run1 <- iterate(iterations = 1)
+run1 <- iterate(iterations = 50)
 do.sugarscape(capacity = 5)
 run2 <- iterate(iterations = 50)
 do.sugarscape(metabolism = 3:5)
