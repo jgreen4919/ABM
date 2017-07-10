@@ -13,9 +13,10 @@
 # Each cell in the world has a sugar capacity c and initially has c amount of sugar. 
 # Each agent has an id, vision ranging from 1 to maxviz, and a store of sugar s.
 # When world is initialized, agent harvests the sugar in their initial cell
-do.sugarscape.organized <- function(dim = 50, popdens = .25, capacity = 4, grate = 1, 
-                          maxviz = 6, r_endow = 5:25, metabolism = 1:4,
-                          characteristics = c("id","vision","sugar","metabolism")){
+
+do.sugarscape.organized <- function(dim = 50, popdens = .25, capacity = 4, grate = 1, old.age = 60,
+                                    maxviz = 6, r_endow = 5:25, metabolism = 1:4, age = 1:60, gender = c(0,1),
+                                    characteristics = c("id","vision","sugar","metabolism","age","gender")){
   require(data.table)
   sugar <- matrix(rep(0, dim^2), nrow=dim, byrow=TRUE)
   sugar[abs(row(sugar)-col(sugar)) < (50-(0.01*row(sugar)*col(sugar)))] <- 0
@@ -46,12 +47,16 @@ do.sugarscape.organized <- function(dim = 50, popdens = .25, capacity = 4, grate
         agents[i,j,2] <<- sample(1:maxviz, 1)
         agents[i,j,3] <<- sample(r_endow, 1)
         agents[i,j,4] <<- sample(metabolism, 1)
+        agents[i,j,5] <<- sample(age, 1)
+        agents[i,j,6] <<- sample(gender, 1)
       }
       else{
         agents[i,j,1] <<- NA
         agents[i,j,2] <<- NA
         agents[i,j,3] <<- NA
         agents[i,j,4] <<- NA
+        agents[i,j,5] <<- NA
+        agents[i,j,6] <<- NA
       }
     }
   }  
@@ -65,7 +70,9 @@ do.sugarscape.organized <- function(dim = 50, popdens = .25, capacity = 4, grate
                        agid = rep(NA, prod(dim*dim)),
                        agviz = rep(NA, prod(dim*dim)),
                        agmetab = rep(NA, prod(dim*dim)),
-                       agsugar = rep(NA, prod(dim*dim))
+                       agsugar = rep(NA, prod(dim*dim)),
+                       agage = rep(NA, prod(dim*dim)),
+                       aggender = rep(NA, prod(dim*dim))
   )
   # Copy sugar and agent/agent characteristics over to sugarscape
   for(i in 1:dim){
@@ -76,6 +83,8 @@ do.sugarscape.organized <- function(dim = 50, popdens = .25, capacity = 4, grate
       scape$agviz[scape$x == i & scape$y == j] <<- agents[i,j,2]
       scape$agmetab[scape$x == i & scape$y == j] <<- agents[i,j,4]
       scape$agsugar[scape$x == i & scape$y == j] <<- agents[i,j,3]
+      scape$agage[scape$x == i & scape$y == j] <<- agents[i,j,5]
+      scape$aggender[scape$x == i & scape$y == j] <<- agents[i,j,6]
     }
   }
   
@@ -140,9 +149,11 @@ iterate <- function(iterations, store.plots = FALSE){
   mean_vision <- mean(scape$agviz, na.rm = T) # Store initial mean population vision
   mean_metab <- mean(scape$agmetab, na.rm = T) # Store initial mean population metabolism
   gcoef <- gini(scape$agsugar[!is.na(scape$agsugar)]) # Store initial Gini coefficient
-  if(store.plots = TRUE){
-  viz <<- list(NULL)
-  viz[[1]] <<- plotScape(title = "Initial Sugarscape") 
+  starved <- c(NULL)
+  aged <- c(NULL)
+  if(store.plots == TRUE){
+    viz <<- list(NULL)
+    viz[[1]] <<- plotScape(title = "Initial Sugarscape") 
   }
   for(i in 1:iterations){
     # Grow sugar
@@ -190,7 +201,7 @@ iterate <- function(iterations, store.plots = FALSE){
       }
     }
     
-    transition <- subset(scape, !is.na(agid), c(1:3,7:10)) # Placeholder data table to track movement
+    transition <- subset(scape, !is.na(agid), c(1:3,7:ncol(scape))) # Placeholder data table to track movement
     transition[,target := rep(NA, nrow(transition))]
     # Determine where each agent is moving
     for(t in 1:nrow(transition)){
@@ -201,8 +212,8 @@ iterate <- function(iterations, store.plots = FALSE){
     # move agents to the new cells
     for(n in 1:nrow(scape)){
       if(scape$cellid[n] %in% transition[,target]){
-        scape[transition[scape$cellid[n] == target, cellid], 7:10] <<- NA
-        scape[n,7:10] <<- transition[target == n, 4:7]
+        scape[transition[scape$cellid[n] == target, cellid], 7:ncol(scape)] <<- NA
+        scape[n,7:ncol(scape)] <<- transition[target == n, 4:(ncol(transition)-1)]
       }
     }
     
@@ -215,19 +226,31 @@ iterate <- function(iterations, store.plots = FALSE){
       }
     }
     scape$agsugar <<- with(scape, ifelse(!is.na(agsugar), agsugar - agmetab, agsugar)) # decrement agent sugar by metabolic rate
-    scape[agsugar <= 0, 7:10] <<- NA # Agents that run out of sugar die
+    starved <- c(starved, scape[agsugar <= 0, agid]) # Update vector of agent IDs for starved agents
+    scape[agsugar <= 0, 7:ncol(scape)] <<- NA # Agents that run out of sugar starve
     
+    scape$agage <<- scape$agage + 1
+    old.ids <- scape[agage > old.age, agid] # List of IDs of old agents
+    if(length(old.ids) > 0){
+      for(i in 1:length(old.ids)){
+        # Old agents have Old.Age/Agent.Age chance of dying of old age
+        if(runif(1) > (old.age/scape[agid == old.ids[i], agage])){
+          aged <- c(aged, old.ids[i]) # Update vector of agents who have died of old age
+          scape[agid == old.ids[i], 7:ncol(scape)] <- NA 
+        }
+      }
+    }
     n_agents <- c(n_agents, nrow(scape[agid > 0])) # Store new number of agents
     mean_vision <- c(mean_vision, mean(scape$agviz, na.rm = T)) # Store new mean population vision
     mean_metab <- c(mean_metab, mean(scape$agmetab, na.rm = T)) # Store new mean population metabolism
     gcoef <- c(gcoef, gini(scape$agsugar[!is.na(scape$agsugar)])) # Store new gini coefficient
-    if(store.plots = TRUE){
-    viz[[i+1]] <<- plotScape(title = paste("Sugarscape after round ", i, sep = "")) # Store plot for each iteration
+    if(store.plots == TRUE){
+      viz[[i+1]] <<- plotScape(title = paste("Sugarscape after round ", i, sep = "")) # Store plot for each iteration
     }
   }
   # Store vectors of characteristics in a list and return them
-  returns <- list(n_agents, mean_vision, mean_metab, gcoef)
-  names(returns) <- c("agents","mean.vision", "mean.metabolism", "Gini")
+  returns <- list(n_agents, mean_vision, mean_metab, gcoef, starved, aged)
+  names(returns) <- c("agents","mean.vision", "mean.metabolism", "Gini", "Starved", "Aged")
   return(returns)
 }
 
