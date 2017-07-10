@@ -18,7 +18,6 @@ do.aud <- function(dim = 20, qual = .7, qualvar = .2,
                    viz.rule = c("five","cone","global")){
   require(msm)
   require(data.table)
-  pctstanding <<- c(NULL) # Vector to fill later for percent of audience standing
 
   # Matrices for quality, quality threshold and social threshold
   quality <- matrix(data=rtnorm(dim^2, mean = qual, sd = qualvar, lower = 0, upper = 1), nrow=dim, ncol=dim)
@@ -45,7 +44,6 @@ do.aud <- function(dim = 20, qual = .7, qualvar = .2,
       aud$stand[aud$x == i & aud$y == j] <<- quality[i,j] > quality.threshold[i,j] 
     }
   }
-  pctstanding <<- c(pctstanding, mean(aud$stand)) # Calculate initial percent standing
 }
 
 # Function to plot the theater
@@ -86,7 +84,7 @@ plotStand <- function(title){
   
   return(p)
 }
-
+do.aud()
 # Function governing interaction rules between agents
   # Takes agent's row number, column number and audience dimension
 
@@ -127,7 +125,7 @@ do.stand <- function(row, col, dim = 20){
         dis <- dis+1
       }
       coords[,1] <- sapply(coords[,1], function(x) {
-        ifelse(x < 1, 1, x)
+        ifelse(x < 1, 1, ifelse(x > dim, dim, x))
       })
       coords <- unique(coords)
       
@@ -143,15 +141,50 @@ do.stand <- function(row, col, dim = 20){
 
 # Function to iterate through a specified number of rounds. Sets vision rule for do.stand() to inherit
 iterate <- function(iterations){
+  pctstanding <<- mean(aud$stand) #Calculate initial percent standing
+  mst <<- mean(aud$st[aud$stand == FALSE]) #Calculate mean social threshold of sitting audience members
+  mq <<- mean(aud$q[aud$stand == FALSE]) #Calculate mean quality perception of sitting audience members
   for(i in 1:iterations){
     aud[,stand := do.stand(row = y, col = x, dim = 20),
         by = 1:nrow(aud)] # Update standing status for each audience member in each iteration
     pctstanding <<- c(pctstanding, mean(aud$stand)) # Update vector of percent standing in each iteration
-  }
-  plotStand(paste("Audience after ", i, " rounds", sep = "")) #Plot the updated theater after i iterations
+    mst <<- c(mst, mean(aud$st[aud$stand == FALSE])) # Update vector of mean social threshold of sitting audience members in each iteration
+    mq <<- c(mq, mean(aud$q[aud$stand == FALSE])) # Update vector of mean quality perception of sitting audience members in each iteration
+    }
+  plotStand(paste("Audience after round ", i, sep = "")) #Plot the updated theater after i iterations
 }
 
+# Default run
 do.aud()
 plotStand(title = "Audience Immediately After Performance Ends")
-iterate(iterations = 1)
-pctstanding
+iterate(iterations = 10)
+
+# Plot audience characteristics by round
+for(i in 1:length(pctstanding)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,10), ylim=c(0,1), ylab="Value", xlab="Round", type="n", cex.axis=0.8, main = "Audience Characteristics")
+  }else{
+    segments(i-1, pctstanding[i-1], i, pctstanding[i], col = "green", lwd=2)
+    segments(i-1, mst[i-1], i, mst[i], col = "blue", lwd=2)
+    segments(i-1, mq[i-1], i, mq[i], col = "red", lwd=2)
+  }
+}
+legend(x = 6, y = .2, legend = c("Percent Standing","Mean ST (Sitting)", "Mean Quality (Sitting)"), fill = c("green","blue","red"))
+
+# Poor quality run with universal cone rule
+do.aud(qual = .4, qualvar = .3, viz.rule = "cone")
+plotStand(title = "Audience Immediately After Performance Ends")
+iterate(iterations = 10)
+
+# Plot audience characteristics by round
+for(i in 1:length(pctstanding)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,10), ylim=c(0,1), ylab="Value", xlab="Round", type="n", cex.axis=0.8, main = "Audience Characteristics")
+  }else{
+    segments(i-1, pctstanding[i-1], i, pctstanding[i], col = "green", lwd=2)
+    segments(i-1, mst[i-1], i, mst[i], col = "blue", lwd=2)
+    segments(i-1, mq[i-1], i, mq[i], col = "red", lwd=2)
+  }
+}
+legend(x = 6, y = .2, legend = c("Percent Standing","Mean ST (Sitting)", "Mean Quality (Sitting)"), fill = c("green","blue","red"))
+
