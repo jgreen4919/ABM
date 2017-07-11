@@ -29,6 +29,7 @@ do.sugarscape.organized <- function(dim = 50, popdens = .25, capacity = 4, grate
   sugar[((row(sugar)-75)^2)+((col(sugar)-75)^2) < 100] <- capacity
   
   n_agents <- round(dim*dim*popdens) # Set number of agents
+  old.age <<- old.age
   
   a <- matrix(NA, nrow = dim, ncol = dim)
   for(i in 1:length(a)){
@@ -256,24 +257,50 @@ iterate <- function(iterations, store.plots = FALSE){
 
 # Vary different characteristics over 30-round runs
 do.sugarscape.organized()
-run1 <- iterate(iterations = 30)
+run1 <- iterate(iterations = 30, store.plots = TRUE)
 viz1 <- viz
+for(i in 1:length(viz1)){
+  dev.copy(png, paste("defaultscape_frame",i,sep=""))
+  viz1[[i]]
+  dev.off()
+}
 
 do.sugarscape.organized(capacity = 6)
-run2 <- iterate(iterations = 30)
+run2 <- iterate(iterations = 30, store.plots = TRUE)
 viz2 <- viz
+for(i in 1:length(viz2)){
+  dev.copy(png, paste("highcapscape_frame",i,sep=""))
+  viz2[[i]]
+  dev.off()
+}
+
 
 do.sugarscape.organized(metabolism = 3:5)
-run3 <- iterate(iterations= 30)
+run3 <- iterate(iterations= 30, store.plots = TRUE)
 viz3 <- viz
+for(i in 1:length(viz3)){
+  dev.copy(png, paste("highmetabscape_frame",i,sep=""))
+  viz3[[i]]
+  dev.off()
+}
 
 do.sugarscape.organized(maxviz = 9)
-run4 <- iterate(iterations= 30)
+run4 <- iterate(iterations= 30, store.plots = TRUE)
 viz4 <- viz
+for(i in 1:length(viz4)){
+  dev.copy(png, paste("highvizscape_frame",i,sep=""))
+  viz4[[i]]
+  dev.off()
+}
 
 do.sugarscape.organized(maxviz = 3)
-run5 <- iterate(iterations= 30)
+run5 <- iterate(iterations= 30, store.plots = TRUE)
 viz5 <- viz
+for(i in 1:length(viz5)){
+  dev.copy(png, paste("lowvizscape_frame",i,sep=""))
+  viz5[[i]]
+  dev.off()
+}
 
 # Track population characteristics over time, by run
 
