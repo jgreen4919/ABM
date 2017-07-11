@@ -14,7 +14,7 @@
 # Each agent has an id, vision ranging from 1 to maxviz, and a store of sugar s.
 # When world is initialized, agent harvests the sugar in their initial cell
 
-do.sugarscape.organized <- function(dim = 50, popdens = .25, capacity = 4, grate = 1, old.age = 60,
+do.sugarscape.gens <- function(dim = 50, popdens = .25, capacity = 4, grate = 1, old.age = 60,
                                     maxviz = 6, r_endow = 5:25, metabolism = 1:4, age = 1:60, gender = c(0,1),
                                     characteristics = c("id","vision","sugar","metabolism","age","gender")){
   require(data.table)
@@ -29,6 +29,7 @@ do.sugarscape.organized <- function(dim = 50, popdens = .25, capacity = 4, grate
   sugar[((row(sugar)-75)^2)+((col(sugar)-75)^2) < 100] <- capacity
   
   n_agents <- round(dim*dim*popdens) # Set number of agents
+  old.age <<- old.age
   
   a <- matrix(NA, nrow = dim, ncol = dim)
   for(i in 1:length(a)){
@@ -68,8 +69,8 @@ do.sugarscape.organized <- function(dim = 50, popdens = .25, capacity = 4, grate
                        cellcap = rep(NA, prod(dim*dim)),
                        cellgrate = rep(grate, prod(dim*dim)),
                        agid = rep(NA, prod(dim*dim)),
-                       parent.id1 = rep(NA, prod(dim*dim)),
-                       parent.id2 = rep(NA, prod(dim*dim)),
+                       parent.id1 = rep(0, prod(dim*dim)),
+                       parent.id2 = rep(0, prod(dim*dim)),
                        agviz = rep(NA, prod(dim*dim)),
                        agmetab = rep(NA, prod(dim*dim)),
                        agsugar = rep(NA, prod(dim*dim)),
@@ -146,7 +147,7 @@ plotScape <- function(title = "Sugarscape"){
 }
 
 # The last function specifies interaction rules for each round.
-iterate <- function(iterations, store.plots = FALSE){
+iterate.gens <- function(iterations, store.plots = FALSE){
   require(reldist)
   n_agents <- nrow(scape[agid > 0]) # Store initial number of agents
   mean_vision <- mean(scape$agviz, na.rm = T) # Store initial mean population vision
@@ -208,7 +209,7 @@ iterate <- function(iterations, store.plots = FALSE){
     transition[,target := rep(NA, nrow(transition))]
     # Determine where each agent is moving
     for(t in 1:nrow(transition)){
-      transition$target[t] <- pickcell.compete(x_value = transition$x[t], y_value = transition$y[t], 
+      transition$target[t] <- pickcell(x_value = transition$x[t], y_value = transition$y[t], 
                                        maxviz = transition$agviz[t], dimension = max(scape$x))
     }
     
@@ -235,14 +236,14 @@ iterate <- function(iterations, store.plots = FALSE){
     scape$agage <<- scape$agage + 1
     old.ids <- scape[agage > old.age, agid] # List of IDs of old agents
     if(length(old.ids) > 0){
-      for(i in 1:length(old.ids)){
+      for(o in 1:length(old.ids)){
         # Old agents have Old.Age/Agent.Age chance of dying of old age
-        if(runif(1) > (old.age/scape[agid == old.ids[i], agage])){
-          aged <- c(aged, old.ids[i]) # Update vector of agents who have died of old age
-          scape[agid == old.ids[i], 7:ncol(scape)] <- NA 
+        if(runif(1) > (old.age/scape[agid == old.ids[o], agage])){
+          aged <- c(aged, old.ids[o]) # Update vector of agents who have died of old age
+          scape[agid == old.ids[o], 7:ncol(scape)] <- NA 
         }
       }
-    }
+    }else{aged <- aged}
     
     find.mates <- function(x_value, y_value, maxviz, dimension){
       gender <- scape[x == x_value & y == y_value, aggender]
@@ -268,7 +269,7 @@ iterate <- function(iterations, store.plots = FALSE){
     if(length(pot.mates) > 0){
       return(pot.mates)
     }else{return(NA)}
-    }
+  }
     cur_agents <- scape[!is.na(agid)]
     ag_match <- cur_agents$agid
     crushes <- list(NULL)
@@ -353,7 +354,7 @@ iterate <- function(iterations, store.plots = FALSE){
         if(x > dimension){x = dimension}
         else{x}})
       
-      see.ids <- c(scape[x == x_value & y %in% y_vals & is.na(agid), cellid], scape[x %in% x_vals & y == y_value & is.na(agid), cellid]) # Empty cells agents can see
+      see.ids <- c(scape[x %in% x_vals & y %in% y_vals & is.na(agid), cellid], scape[x %in% x_vals & y %in% y_vals & is.na(agid), cellid]) # Empty cells agents can see
       see.ids <- see.ids[! see.ids %in% babies[,cellid]] # Minus cells other babies have already been placed in
       
       # Find the cell(s) with the most sugar within the available cells the agent sees
@@ -364,13 +365,7 @@ iterate <- function(iterations, store.plots = FALSE){
       }
       
       if(length(babycell) > 1){
-        dist <- sapply(1:length(babycell), function(a){
-          abs(scape[x == x_value & y == y_value, x] - scape[cellid %in% babycell[a], x]) + 
-            abs(scape[x == x_value & y == y_value, y] - scape[cellid %in% babycell[a], y])
-        })
-        
-        babycell <- babycell[which.min(dist)]
-        return(babycell) # If multiple available cells with max sugar, return nearest (if equadistant, pick first)
+        return(babycell[1]) # If multiple available cells with max sugar, return first one
       }
       if(length(babycell) == 0){
         return(babies[parent.id1 == pid1] <- NA) #If there is nowhere for the baby to live, it dies
@@ -381,9 +376,10 @@ iterate <- function(iterations, store.plots = FALSE){
     }
     
     for(b in 1:nrow(babies)){
-      babies$cellid[1] <- pickcell.baby(pid1 = babies$parent.id1[b], pid2 = babies$parent.id2[b], dimension = max(scape$x))
-      scape[cellid == babies$cellid[1], 7:ncol(scape)] <<- babies[b, 4:ncol(babies)]
+      babies$cellid[b] <- pickcell.baby(pid1 = babies$parent.id1[b], pid2 = babies$parent.id2[b], dimension = max(scape$x))
+      scape[cellid == babies$cellid[b], 7:ncol(scape)] <<- babies[cellid == babies$cellid[b], 4:ncol(babies)]
     }
+    max.agid <<- max(scape$agid, na.rm = T)
 
     n_agents <- c(n_agents, nrow(scape[agid > 0])) # Store new number of agents
     mean_vision <- c(mean_vision, mean(scape$agviz, na.rm = T)) # Store new mean population vision
@@ -398,3 +394,6 @@ iterate <- function(iterations, store.plots = FALSE){
   names(returns) <- c("agents","mean.vision", "mean.metabolism", "Gini", "Starved", "Aged")
   return(returns)
 }
+do.sugarscape.gens()
+plotScape()
+iterate.gens(iterations = 2)
