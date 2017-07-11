@@ -221,23 +221,23 @@ iterate <- function(iterations){
   return(returns)
 }
 
-# Vary different characteristics over 50-round runs
+# Vary different characteristics over 30-round runs
 do.sugarscape()
 plotScape()
-run1 <- iterate(iterations = 50)
+run1 <- iterate(iterations = 30)
 do.sugarscape(capacity = 5)
-run2 <- iterate(iterations = 50)
+run2 <- iterate(iterations = 30)
 do.sugarscape(metabolism = 3:5)
-run3 <- iterate(iterations= 50)
-do.sugarscape(maxviz = 3)
-run4 <- iterate(iterations= 50)
+run3 <- iterate(iterations= 30)
+do.sugarscape(maxviz = 9)
+run4 <- iterate(iterations= 30)
 
 # Track population characteristics over time, by run
 
 # Number of agents (carrying capacity)
 for(i in 1:length(run1$agents)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,50), ylim=c(0,700), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
+    plot(-100, -100, xlim=c(1,30), ylim=c(0,700), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
   }else{
     segments(i-1, run1$agents[i-1], i, run1$agents[i], col = "green", lwd=2)
     segments(i-1, run2$agents[i-1], i, run2$agents[i], col = "blue", lwd=2)
@@ -249,7 +249,7 @@ for(i in 1:length(run1$agents)){
 # Mean vision
 for(i in 1:length(run1$mean.vision)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,50), ylim=c(1,5), ylab="Mean Vision", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Vision")
+    plot(-100, -100, xlim=c(1,30), ylim=c(1,7), ylab="Mean Vision", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Vision")
   }else{
     segments(i-1, run1$mean.vision[i-1], i, run1$mean.vision[i], col = "green", lwd=2)
     segments(i-1, run2$mean.vision[i-1], i, run2$mean.vision[i], col = "blue", lwd=2)
@@ -261,7 +261,7 @@ for(i in 1:length(run1$mean.vision)){
 # Mean metabolism
 for(i in 1:length(run1$mean.metabolism)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,50), ylim=c(0,5), ylab="Mean Metabolism", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Metabolism")
+    plot(-100, -100, xlim=c(1,30), ylim=c(0,5), ylab="Mean Metabolism", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Metabolism")
   }else{
     segments(i-1, run1$mean.metabolism[i-1], i, run1$mean.metabolism[i], col = "green", lwd=2)
     segments(i-1, run2$mean.metabolism[i-1], i, run2$mean.metabolism[i], col = "blue", lwd=2)
@@ -272,7 +272,7 @@ for(i in 1:length(run1$mean.metabolism)){
 
 for(i in 1:length(run1$Gini)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,50), ylim=c(0,1), ylab="Gini Coefficient", xlab="Iteration", type="n", cex.axis=0.8, main = "Wealth Inequality")
+    plot(-100, -100, xlim=c(1,30), ylim=c(0,1), ylab="Gini Coefficient", xlab="Iteration", type="n", cex.axis=0.8, main = "Wealth Inequality")
   }else{
     segments(i-1, run1$Gini[i-1], i, run1$Gini[i], col = "green", lwd=2)
     segments(i-1, run2$Gini[i-1], i, run2$Gini[i], col = "blue", lwd=2)
