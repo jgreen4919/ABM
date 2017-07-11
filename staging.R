@@ -68,6 +68,8 @@ do.sugarscape.organized <- function(dim = 50, popdens = .25, capacity = 4, grate
                        cellcap = rep(NA, prod(dim*dim)),
                        cellgrate = rep(grate, prod(dim*dim)),
                        agid = rep(NA, prod(dim*dim)),
+                       parent.id1 = rep(NA, prod(dim*dim)),
+                       parent.id2 = rep(NA, prod(dim*dim)),
                        agviz = rep(NA, prod(dim*dim)),
                        agmetab = rep(NA, prod(dim*dim)),
                        agsugar = rep(NA, prod(dim*dim)),
@@ -87,6 +89,7 @@ do.sugarscape.organized <- function(dim = 50, popdens = .25, capacity = 4, grate
       scape$aggender[scape$x == i & scape$y == j] <<- agents[i,j,6]
     }
   }
+  max.agid <<- max(scape$agid, na.rm = T) # Store the max agid to manipulate later
   
   # Agents harvest whatever sugar is in the cell they are populated to
   for(i in 1:length(scape$cellsugar)){
@@ -200,12 +203,12 @@ iterate <- function(iterations, store.plots = FALSE){
         return(newcell)
       }
     }
-    
+   
     transition <- subset(scape, !is.na(agid), c(1:3,7:ncol(scape))) # Placeholder data table to track movement
     transition[,target := rep(NA, nrow(transition))]
     # Determine where each agent is moving
     for(t in 1:nrow(transition)){
-      transition$target[t] <- pickcell(x_value = transition$x[t], y_value = transition$y[t], 
+      transition$target[t] <- pickcell.compete(x_value = transition$x[t], y_value = transition$y[t], 
                                        maxviz = transition$agviz[t], dimension = max(scape$x))
     }
     
@@ -232,14 +235,156 @@ iterate <- function(iterations, store.plots = FALSE){
     scape$agage <<- scape$agage + 1
     old.ids <- scape[agage > old.age, agid] # List of IDs of old agents
     if(length(old.ids) > 0){
-    for(i in 1:length(old.ids)){
-      # Old agents have Old.Age/Agent.Age chance of dying of old age
-      if(runif(1) > (old.age/scape[agid == old.ids[i], agage])){
-        aged <- c(aged, old.ids[i]) # Update vector of agents who have died of old age
-        scape[agid == old.ids[i], 7:ncol(scape)] <- NA 
+      for(i in 1:length(old.ids)){
+        # Old agents have Old.Age/Agent.Age chance of dying of old age
+        if(runif(1) > (old.age/scape[agid == old.ids[i], agage])){
+          aged <- c(aged, old.ids[i]) # Update vector of agents who have died of old age
+          scape[agid == old.ids[i], 7:ncol(scape)] <- NA 
         }
       }
     }
+    
+    find.mates <- function(x_value, y_value, maxviz, dimension){
+      gender <- scape[x == x_value & y == y_value, aggender]
+      x_vals <- c((x_value+1):(x_value+maxviz), (x_value-1):(x_value-maxviz))
+      x_vals <- sapply(x_vals, function(x){
+        if(x < 1){x = 1} 
+        if(x > dimension){x = dimension}
+        else{x}})
+      
+      y_vals <- c((y_value+1):(y_value+maxviz), (y_value-1):(y_value-maxviz))
+      y_vals <- sapply(y_vals, function(x){
+        if(x < 1){x = 1}
+        if(x > dimension){x = dimension}
+        else{x}})
+      
+  # Return eligible agents of the opposite sex the agent can see
+      pot.mates <- c(scape[x == x_value & y %in% y_vals & 
+                             aggender != gender & !is.na(agid) & 
+                             agmetab < (agsugar/2) & agage %in% c(10:50), agid], 
+                     c(scape[x %in% x_vals & y == y_value & 
+                               aggender != gender & !is.na(agid) & 
+                               agmetab < (agsugar/2) & agage %in% c(10:50), agid]))
+    if(length(pot.mates) > 0){
+      return(pot.mates)
+    }else{return(NA)}
+    }
+    cur_agents <- scape[!is.na(agid)]
+    ag_match <- cur_agents$agid
+    crushes <- list(NULL)
+    crushes <- sapply(1:nrow(cur_agents), function(c){
+      crushes[[c]] <- find.mates(x_value = scape[agid == ag_match[c],x], y_value = scape[agid == ag_match[c],y], 
+                                                 maxviz = scape[agid == ag_match[c],agviz], dimension = max(scape$x))
+    })
+    matches <- list(NULL)
+    matches <- sapply(1:length(crushes), function(m){
+      if(is.na(crushes[[m]][1])){
+        matches[[m]] <- NA
+        }else{
+          is.match <- c(NULL)
+          for(i in 1:length(crushes[[m]])){
+            is.match[i] <- ag_match[m] %in% crushes[[which(ag_match == crushes[[m]][i])]]
+          }
+          if(length(crushes[[m]][which(is.match)]) > 0){
+          matches[[m]] <- crushes[[m]][which(is.match)]
+          }else{matches[[m]] <- NA}
+          }
+      }
+    )
+    
+    cur_agents[,match.id := rep(NA, nrow(cur_agents))]
+    for(a in 1:nrow(cur_agents)){
+      mate.ids <- matches[[a]]
+      mate.ids <- mate.ids[! mate.ids %in% cur_agents[,match.id]] 
+      
+      if(length(mate.ids) == 0){
+        cur_agents$match.id[a] <- NA
+        }
+      else{
+        cur_agents$match.id[a] <- mate.ids[1]
+      }
+    }
+    n_babies <- length(cur_agents[!is.na(match.id), agid])/2
+    babies <- data.table(cellid = rep(NA, n_babies),
+                         x = rep(NA, n_babies),
+                         y = rep(NA, n_babies),
+                         agid = (max.agid+1):(max.agid + n_babies),
+                         parent.id1 = rep(NA, n_babies),
+                         parent.id2 = rep(NA, n_babies),
+                         agviz = rep(NA, n_babies),
+                         agmetab = rep(NA, n_babies),
+                         agsugar = rep(NA, n_babies),
+                         agage = rep(0, n_babies),
+                         aggender = sample(0:1, n_babies, replace = T))
+    
+    parents <- cur_agents[!is.na(match.id), agid]
+
+    for(i in 1:nrow(babies)){
+      babies$parent.id1[i] <- parents[1]
+      babies$parent.id2[i] <- cur_agents[agid == parents[1], match.id]
+      babies$agviz[i] <- round((cur_agents[agid == babies$parent.id1[i], agviz] + cur_agents[agid == babies$parent.id2[i], agviz])/2)
+      babies$agmetab[i] <- round(mean(cur_agents[agid == babies$parent.id1[i], agmetab], cur_agents[agid == babies$parent.id2[i], agmetab]))
+      s1 <- round(cur_agents[agid == babies$parent.id1[i], agsugar]/2)
+      s2 <- round(cur_agents[agid == babies$parent.id2[i], agsugar]/2)
+      babies$agsugar[i] <- s1+s2
+      scape$agsugar <<- with(scape, ifelse(agid == babies$parent.id1[i], agsugar - s1, ifelse(
+                                           agid == babies$parent.id2[i], agsugar - s2,
+                                           agsugar))) # decrement agent sugar by metabolic rate
+      parents <- parents[! parents %in% babies[,c(parent.id1, parent.id2)]] 
+    }
+    
+    pickcell.baby <- function(pid1, pid2, dimension){
+      p1x <- scape[agid == pid1, x]
+      p1y <- scape[agid == pid1, y]
+      p1viz <- scape[agid == pid1, agviz]
+      p2x <- scape[agid == pid2, x]
+      p2y <- scape[agid == pid2, y]
+      p2viz <- scape[agid == pid2, agviz]
+      
+      x_vals <- c((p1x+1):(p1x+p1viz), (p1x-1):(p1x-p1viz), (p2x+1):(p2x+p2viz), (p2x-1):(p2x-p2viz))
+      x_vals <- sapply(x_vals, function(x){
+        if(x < 1){x = 1} 
+        if(x > dimension){x = dimension}
+        else{x}})
+      
+      y_vals <- c((p1y+1):(p1y+p1viz), (p1y-1):(p1y-p1viz), (p2y+1):(p2y+p2viz), (p2y-1):(p2y-p2viz))
+      y_vals <- sapply(y_vals, function(x){
+        if(x < 1){x = 1}
+        if(x > dimension){x = dimension}
+        else{x}})
+      
+      see.ids <- c(scape[x == x_value & y %in% y_vals & is.na(agid), cellid], scape[x %in% x_vals & y == y_value & is.na(agid), cellid]) # Empty cells agents can see
+      see.ids <- see.ids[! see.ids %in% babies[,cellid]] # Minus cells other babies have already been placed in
+      
+      # Find the cell(s) with the most sugar within the available cells the agent sees
+      if(length(see.ids) > 0){
+        babycell <- scape[cellid %in% see.ids & is.na(agid) & cellsugar == max(scape[cellid %in% see.ids, cellsugar]), cellid]
+      }else{
+        return(babies[parent.id1 == pid1] <- NA) #If there is nowhere for the baby to live, it dies
+      }
+      
+      if(length(babycell) > 1){
+        dist <- sapply(1:length(babycell), function(a){
+          abs(scape[x == x_value & y == y_value, x] - scape[cellid %in% babycell[a], x]) + 
+            abs(scape[x == x_value & y == y_value, y] - scape[cellid %in% babycell[a], y])
+        })
+        
+        babycell <- babycell[which.min(dist)]
+        return(babycell) # If multiple available cells with max sugar, return nearest (if equadistant, pick first)
+      }
+      if(length(babycell) == 0){
+        return(babies[parent.id1 == pid1] <- NA) #If there is nowhere for the baby to live, it dies
+      }
+      else{
+        return(babycell)
+      }
+    }
+    
+    for(b in 1:nrow(babies)){
+      babies$cellid[1] <- pickcell.baby(pid1 = babies$parent.id1[b], pid2 = babies$parent.id2[b], dimension = max(scape$x))
+      scape[cellid == babies$cellid[1], 7:ncol(scape)] <<- babies[b, 4:ncol(babies)]
+    }
+
     n_agents <- c(n_agents, nrow(scape[agid > 0])) # Store new number of agents
     mean_vision <- c(mean_vision, mean(scape$agviz, na.rm = T)) # Store new mean population vision
     mean_metab <- c(mean_metab, mean(scape$agmetab, na.rm = T)) # Store new mean population metabolism
@@ -253,7 +398,3 @@ iterate <- function(iterations, store.plots = FALSE){
   names(returns) <- c("agents","mean.vision", "mean.metabolism", "Gini", "Starved", "Aged")
   return(returns)
 }
-
-do.sugarscape.organized()
-plotScape()
-iterate(iterations = 3)
