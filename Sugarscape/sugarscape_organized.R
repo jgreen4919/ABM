@@ -233,14 +233,14 @@ iterate <- function(iterations, store.plots = FALSE){
     scape$agage <<- scape$agage + 1
     old.ids <- scape[agage > old.age, agid] # List of IDs of old agents
     if(length(old.ids) > 0){
-      for(i in 1:length(old.ids)){
+      for(o in 1:length(old.ids)){
         # Old agents have Old.Age/Agent.Age chance of dying of old age
-        if(runif(1) > (old.age/scape[agid == old.ids[i], agage])){
-          aged <- c(aged, old.ids[i]) # Update vector of agents who have died of old age
-          scape[agid == old.ids[i], 7:ncol(scape)] <- NA 
+        if(runif(1) > (old.age/scape[agid == old.ids[o], agage])){
+          aged <- c(aged, old.ids[o]) # Update vector of agents who have died of old age
+          scape[agid == old.ids[o], 7:ncol(scape)] <<- NA 
         }
       }
-    }
+    }else{aged <- aged}
     n_agents <- c(n_agents, nrow(scape[agid > 0])) # Store new number of agents
     mean_vision <- c(mean_vision, mean(scape$agviz, na.rm = T)) # Store new mean population vision
     mean_metab <- c(mean_metab, mean(scape$agmetab, na.rm = T)) # Store new mean population metabolism
@@ -256,21 +256,51 @@ iterate <- function(iterations, store.plots = FALSE){
 }
 
 # Vary different characteristics over 30-round runs
+setwd("~/Desktop/ABM/Sugarscape")
 do.sugarscape.organized()
-plotScape()
-run1 <- iterate(iterations = 30)
+run1 <- iterate(iterations = 30, store.plots = TRUE)
+viz1 <- viz
+for(i in 1:length(viz1)){
+  dev.copy(png, paste("defaultrun_frame",i,".png", sep=""))
+  print(viz1[[i]])
+  dev.off()
+}
 
-do.sugarscape.organized(capacity = 6)
+do.sugarscape.organized(capacity = 8)
 run2 <- iterate(iterations = 30)
+viz2 <- viz
+for(i in 1:length(viz2)){
+  dev.copy(png, paste("highcapacity_frame",i,".png", sep=""))
+  print(viz2[[i]])
+  dev.off()
+}
 
 do.sugarscape.organized(metabolism = 3:5)
 run3 <- iterate(iterations= 30)
+viz3 <- viz
+for(i in 1:length(viz3)){
+  dev.copy(png, paste("highmetabolism_frame",i,".png", sep=""))
+  print(viz3[[i]])
+  dev.off()
+}
 
 do.sugarscape.organized(maxviz = 9)
 run4 <- iterate(iterations= 30)
+viz4 <- viz
+for(i in 1:length(viz4)){
+  dev.copy(png, paste("highvision_frame",i,".png", sep=""))
+  print(viz4[[i]])
+  dev.off()
+}
 
 do.sugarscape.organized(maxviz = 3)
 run5 <- iterate(iterations= 30)
+viz5 <- viz
+for(i in 1:length(viz5)){
+  dev.copy(png, paste("lowvision_frame",i,".png", sep=""))
+  print(viz5[[i]])
+  dev.off()
+}
 
 # Track population characteristics over time, by run
 
