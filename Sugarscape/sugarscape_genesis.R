@@ -22,7 +22,7 @@
 # When world is initialized, agent harvests the sugar in their initial cell
 
 do.sugarscape.gens <- function(dim = 50, popdens = .25, capacity = 4, grate = 1, old.age = 60,
-                               maxviz = 6, r_endow = 5:25, metabolism = 1:4, age = 1:60, gender = c(0,1),
+                               maxviz = 6, r_endow = 5:25, metabolism = 1:4, gender = c(0,1),
                                characteristics = c("id","vision","sugar","metabolism","age","gender"), estate.rule = "tax"){
   require(data.table)
   sugar <- matrix(rep(0, dim^2), nrow=dim, byrow=TRUE)
@@ -60,7 +60,7 @@ do.sugarscape.gens <- function(dim = 50, popdens = .25, capacity = 4, grate = 1,
         agents[i,j,2] <<- sample(1:maxviz, 1)
         agents[i,j,3] <<- sample(r_endow, 1)
         agents[i,j,4] <<- sample(metabolism, 1)
-        agents[i,j,5] <<- sample(age, 1)
+        agents[i,j,5] <<- sample(1:old.age, 1)
         agents[i,j,6] <<- sample(gender, 1)
       }
       else{
