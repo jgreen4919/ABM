@@ -1,14 +1,17 @@
 # Sugarscape replication (from Epstein and Axtell 1996)
 # Initiates world of x by x dimensions populated by agents with density d.
-# Each cell in the world has a sugar capacity c. Sugar is organized into two concentrations at corners of the scape.
+# Each cell in the world has a sugar capacity c. 
+  # Sugar is organized such that more sugar is in the center of the scape; the corners are barren.
 # Each agent has a vision between 1 and maxviz, a metabolism within a set range, an age, a sex, and an endowment of sugar.
 # In each round, each cell grows sugar at rate grate unless it is at capacity.
 # Agents look around, determine which available cell in their field of vision has the most sugar, move there, and harvest the sugar
 # Sugar stores are then decremented by the agent's metabolic rate
 # If sugar stores fall to at or below zero, agent dies
-# At end of each round, surviving agents look in their field of vision for members of the opposite sex who have double their metabolism in sugar
-  # If they match with another agent who considers them eligible, they have a child with characteristics averaged between them and an endowment of half of each parent's sugar
-  # Children populate to an empty cell in either parent's field of vision 
+# At end of each round, surviving agents look in their field of vision for members of the opposite sex who are of childbearing health and age
+# If they match with another agent who considers them eligible, they have a child with characteristics averaged between them and an endowment of half of each parent's sugar
+# Children populate to an empty cell in either parent's field of vision 
+# If an agent reaches old age (defined flexibly in the function call) they have an Old.Age/Agent.Age chance of dying
+  # Agents who die of old age have their sugar either distributed to their children or taxed by the government, depending on the estate rule defined in the function call
 
 # Function tracks total number of agents, number of agents born, mean vision, mean metabolism and Gini coefficient by round.
 # Function tracks which agents have starved to death and which have died.
@@ -20,7 +23,7 @@
 
 do.sugarscape.gens <- function(dim = 50, popdens = .25, capacity = 4, grate = 1, old.age = 60,
                                maxviz = 6, r_endow = 5:25, metabolism = 1:4, age = 1:60, gender = c(0,1),
-                               characteristics = c("id","vision","sugar","metabolism","age","gender")){
+                               characteristics = c("id","vision","sugar","metabolism","age","gender"), estate.rule = "tax"){
   require(data.table)
   sugar <- matrix(rep(0, dim^2), nrow=dim, byrow=TRUE)
   sugar[abs(row(sugar)-col(sugar)) < (50-(0.01*row(sugar)*col(sugar)))] <- 0
@@ -31,6 +34,11 @@ do.sugarscape.gens <- function(dim = 50, popdens = .25, capacity = 4, grate = 1,
   sugar[((row(sugar)-75)^2)+((col(sugar)-75)^2) < 500] <- capacity / 2
   sugar[((row(sugar)-75)^2)+((col(sugar)-75)^2) < 250] <- round(capacity*.67)
   sugar[((row(sugar)-75)^2)+((col(sugar)-75)^2) < 100] <- capacity
+  
+  er <<- estate.rule
+  if(estate.rule == "tax"){
+    grev <<- 0 # If the government will be taxing estates, set a counter for government revenues
+  }
   
   n_agents <- round(dim*dim*popdens) # Set number of agents
   old.age <<- old.age
@@ -151,7 +159,8 @@ plotScape <- function(title = "Sugarscape"){
 }
 
 # The last function specifies interaction rules for each round.
-iterate.gens <- function(iterations, store.plots = FALSE){
+iterate.gens <- function(iterations, store.plots = FALSE, estate.rule = er){
+  require(data.table)
   require(reldist)
   n_agents <- nrow(scape[agid > 0]) # Store initial number of agents
   mean_vision <- mean(scape$agviz, na.rm = T) # Store initial mean population vision
@@ -245,12 +254,42 @@ iterate.gens <- function(iterations, store.plots = FALSE){
         # Old agents have Old.Age/Agent.Age chance of dying of old age
         if(runif(1) > (old.age/scape[agid == old.ids[o], agage])){
           aged <- c(aged, old.ids[o]) # Update vector of agents who have died of old age
-          scape[agid == old.ids[o], 7:ncol(scape)] <<- NA 
+          
+          if(estate.rule == "inheritance"){
+            kids <- scape[parent.id1 == old.ids[o] | parent.id2 == old.ids[o], agid] # Set vector of old agent's children
+            if(length(kids)>0){
+              # If they had kids, divide old agent's sugar evenly amongst kids, dropping remainder
+              will <- floor(scape[agid == old.ids[o], agsugar]/length(kids))
+              
+              # Add will amount to kids' sugar stores
+              scape$agsugar <<- sapply(1:nrow(scape), function(x){
+                if(scape$agid[x] %in% kids){
+                  scape$agsugar[x] + will
+                }else{scape$agsugar[x]}
+              }
+              )
+            }
+          }
+          if(estate.rule == "tax"){
+            grev <<- grev + scape[agid == old.ids[o], agsugar] # Government collects revenue to be distributed later
+          }
+          scape[agid == old.ids[o], 7:ncol(scape)] <<- NA  # Clear scape of agents who have died of old age
         }
       }
-    }else{aged <- aged}
+    }
+    
+    if(estate.rule == "tax"){
+      ubi <- floor(grev/length(scape[!is.na(agid), agid])) # Divide collected revenues evenly between agents (not including remainder)
+      grev <<- grev - ubi*length(scape[!is.na(agid), agid]) # Subtract distribution from government revenues
+      scape$agsugar <<- sapply(1:nrow(scape), function(x){
+        if(!is.na(scape$agid[x])){
+          scape$agsugar[x] + ubi # Allocate ubi to each agent
+        }else{scape$agsugar[x]}
+      })
+    }
     
     # Subfunction to find potential mates
+    
     find.mates <- function(x_value, y_value, maxviz, dimension){
       gender <- scape[x == x_value & y == y_value, aggender] # Store agent's gender
       x_vals <- c((x_value+1):(x_value+maxviz), (x_value-1):(x_value-maxviz))
@@ -266,13 +305,13 @@ iterate.gens <- function(iterations, store.plots = FALSE){
         else{x}})
       
       # Return eligible agents of the opposite sex the agent can see
-        # Eligible: Opposite sex, sugar stores more than double metabolism, age between 10 and 50
+      # Eligible: Opposite sex, half of sugar stores > double metabolism, age between 18 and 50
       pot.mates <- c(scape[x == x_value & y %in% y_vals & 
                              aggender != gender & !is.na(agid) & 
-                             agmetab < (agsugar/2) & agage %in% c(10:50), agid], 
+                             (agsugar/2) > (agmetab*2) & agage %in% c(18:50), agid], 
                      c(scape[x %in% x_vals & y == y_value & 
                                aggender != gender & !is.na(agid) & 
-                               agmetab < (agsugar/2) & agage %in% c(10:50), agid]))
+                               (agsugar/2) > (agmetab*2) & agage %in% c(18:50), agid]))
       if(length(pot.mates) > 0){
         return(pot.mates)
       }else{return(NA)}
@@ -313,91 +352,95 @@ iterate.gens <- function(iterations, store.plots = FALSE){
         cur_agents$match.id[a] <- NA
       }
       else{
-        cur_agents$match.id[a] <- mate.ids[1] # Partner up with first remaining match
+        cur_agents$match.id[a] <- mate.ids[1] # Partner with first remaining match
       }
     }
     
-    n_babies <- length(cur_agents[!is.na(match.id), agid])/2 # Set number of children that will be born
-    born <- c(born, n_babies) # Update vector of babies born in each round
-    # Set new data table to populate with children
-    babies <- data.table(cellid = rep(NA, n_babies),
-                         x = rep(NA, n_babies),
-                         y = rep(NA, n_babies),
-                         agid = (max.agid+1):(max.agid + n_babies),
-                         parent.id1 = rep(NA, n_babies),
-                         parent.id2 = rep(NA, n_babies),
-                         agviz = rep(NA, n_babies),
-                         agmetab = rep(NA, n_babies),
-                         agsugar = rep(NA, n_babies),
-                         agage = rep(0, n_babies),
-                         aggender = sample(0:1, n_babies, replace = T))
-    
-    parents <- cur_agents[!is.na(match.id), agid] # Set vector of parents
-    
-    # Populate babies data.table with characteristics and subtract the sugar endowment each parent gives them
-    for(p in 1:nrow(babies)){
-      babies$parent.id1[p] <- parents[1]
-      babies$parent.id2[p] <- cur_agents[agid == parents[1], match.id]
-      babies$agviz[p] <- round((cur_agents[agid == babies$parent.id1[p], agviz] + 
-                                  cur_agents[agid == babies$parent.id2[p], agviz])/2)
-      babies$agmetab[p] <- round((cur_agents[agid == babies$parent.id1[p], agmetab] + 
-                                    cur_agents[agid == babies$parent.id2[p], agmetab])/2)
-      s1 <- round(cur_agents[agid == babies$parent.id1[p], agsugar]/2)
-      s2 <- round(cur_agents[agid == babies$parent.id2[p], agsugar]/2)
-      babies$agsugar[p] <- s1+s2 # Baby gets endowment of rounded half of each parent's current sugar
-      scape$agsugar <<- with(scape, ifelse(agid == babies$parent.id1[p], agsugar - s1, ifelse(
-        agid == babies$parent.id2[p], agsugar - s2,
-        agsugar))) # decrement agent sugar by amount endowed to child
-      parents <- parents[! parents %in% babies[,c(parent.id1, parent.id2)]] 
+    n_babies <- length(cur_agents[!is.na(match.id), agid])/2 # Set number of children that will be conceived
+    if(n_babies > 0){
+      
+      # Set new data table to populate with children
+      babies <- data.table(cellid = rep(NA, n_babies),
+                           x = rep(NA, n_babies),
+                           y = rep(NA, n_babies),
+                           agid = (max.agid+1):(max.agid + n_babies),
+                           parent.id1 = rep(NA, n_babies),
+                           parent.id2 = rep(NA, n_babies),
+                           agviz = rep(NA, n_babies),
+                           agmetab = rep(NA, n_babies),
+                           agsugar = rep(NA, n_babies),
+                           agage = rep(0, n_babies),
+                           aggender = sample(0:1, n_babies, replace = T))
+      
+      parents <- cur_agents[!is.na(match.id), agid] # Set vector of parents
+      
+      # Populate babies data.table with characteristics and subtract the sugar endowment each parent gives them
+      for(p in 1:nrow(babies)){
+        babies$parent.id1[p] <- parents[1]
+        babies$parent.id2[p] <- cur_agents[agid == parents[1], match.id]
+        babies$agviz[p] <- round((cur_agents[agid == babies$parent.id1[p], agviz] + 
+                                    cur_agents[agid == babies$parent.id2[p], agviz])/2)
+        babies$agmetab[p] <- round((cur_agents[agid == babies$parent.id1[p], agmetab] + 
+                                      cur_agents[agid == babies$parent.id2[p], agmetab])/2)
+        s1 <- round(cur_agents[agid == babies$parent.id1[p], agsugar]/2)
+        s2 <- round(cur_agents[agid == babies$parent.id2[p], agsugar]/2)
+        babies$agsugar[p] <- s1+s2 # Baby gets endowment of rounded half of each parent's current sugar
+        scape$agsugar <<- with(scape, ifelse(agid == babies$parent.id1[p], agsugar - s1, ifelse(
+          agid == babies$parent.id2[p], agsugar - s2,
+          agsugar))) # decrement agent sugar by amount endowed to child
+        parents <- parents[! parents %in% babies[,c(parent.id1, parent.id2)]] 
+      }
+      
+      # Subfunction to pick empty cell within either parent's field of vision for baby to populate to
+      pickcell.baby <- function(pid1, pid2, dimension){
+        p1x <- scape[agid == pid1, x]
+        p1y <- scape[agid == pid1, y]
+        p1viz <- scape[agid == pid1, agviz]
+        p2x <- scape[agid == pid2, x]
+        p2y <- scape[agid == pid2, y]
+        p2viz <- scape[agid == pid2, agviz]
+        
+        x_vals <- c((p1x+1):(p1x+p1viz), (p1x-1):(p1x-p1viz), (p2x+1):(p2x+p2viz), (p2x-1):(p2x-p2viz))
+        x_vals <- sapply(x_vals, function(x){
+          if(x < 1){x = 1} 
+          if(x > dimension){x = dimension}
+          else{x}})
+        
+        y_vals <- c((p1y+1):(p1y+p1viz), (p1y-1):(p1y-p1viz), (p2y+1):(p2y+p2viz), (p2y-1):(p2y-p2viz))
+        y_vals <- sapply(y_vals, function(x){
+          if(x < 1){x = 1}
+          if(x > dimension){x = dimension}
+          else{x}})
+        
+        see.ids <- c(scape[x %in% x_vals & y %in% y_vals & is.na(agid), cellid], scape[x %in% x_vals & y %in% y_vals & is.na(agid), cellid]) # Empty cells agents can see
+        see.ids <- see.ids[! see.ids %in% babies[,cellid]] # Minus cells other babies have already been placed in
+        
+        # Find the cell(s) with the most sugar within the available cells the agent sees
+        if(length(see.ids) > 0){
+          babycell <- scape[cellid %in% see.ids & is.na(agid) & cellsugar == max(scape[cellid %in% see.ids, cellsugar]), cellid]
+        }else{
+          return(babies[parent.id1 == pid1] <- NA) #If there is nowhere for the baby to live, it dies
+        }
+        
+        if(length(babycell) > 1){
+          return(babycell[1]) # If multiple available cells with max sugar, return first one
+        }
+        if(length(babycell) == 0){
+          return(babies[parent.id1 == pid1] <- NA) #If there is nowhere for the baby to live, it dies
+        }
+        else{
+          return(babycell)
+        }
+      }
+      # Pick cell and populate scape data.table with new agent
+      for(b in 1:nrow(babies)){
+        babies$cellid[b] <- pickcell.baby(pid1 = babies$parent.id1[b], pid2 = babies$parent.id2[b], dimension = max(scape$x))
+        scape[cellid == babies$cellid[b], 7:ncol(scape)] <<- babies[cellid == babies$cellid[b], 4:ncol(babies)]
+      }
+      born <- c(born, nrow(babies[!is.na(babies$cellid)])) # Update vector of babies born in each round
+      max.agid <<- max(scape$agid, na.rm = T) # Update max agent ID
     }
-    
-    # Subfunction to pick empty cell within either parent's field of vision for baby to populate to
-    pickcell.baby <- function(pid1, pid2, dimension){
-      p1x <- scape[agid == pid1, x]
-      p1y <- scape[agid == pid1, y]
-      p1viz <- scape[agid == pid1, agviz]
-      p2x <- scape[agid == pid2, x]
-      p2y <- scape[agid == pid2, y]
-      p2viz <- scape[agid == pid2, agviz]
-      
-      x_vals <- c((p1x+1):(p1x+p1viz), (p1x-1):(p1x-p1viz), (p2x+1):(p2x+p2viz), (p2x-1):(p2x-p2viz))
-      x_vals <- sapply(x_vals, function(x){
-        if(x < 1){x = 1} 
-        if(x > dimension){x = dimension}
-        else{x}})
-      
-      y_vals <- c((p1y+1):(p1y+p1viz), (p1y-1):(p1y-p1viz), (p2y+1):(p2y+p2viz), (p2y-1):(p2y-p2viz))
-      y_vals <- sapply(y_vals, function(x){
-        if(x < 1){x = 1}
-        if(x > dimension){x = dimension}
-        else{x}})
-      
-      see.ids <- c(scape[x %in% x_vals & y %in% y_vals & is.na(agid), cellid], scape[x %in% x_vals & y %in% y_vals & is.na(agid), cellid]) # Empty cells agents can see
-      see.ids <- see.ids[! see.ids %in% babies[,cellid]] # Minus cells other babies have already been placed in
-      
-      # Find the cell(s) with the most sugar within the available cells the agent sees
-      if(length(see.ids) > 0){
-        babycell <- scape[cellid %in% see.ids & is.na(agid) & cellsugar == max(scape[cellid %in% see.ids, cellsugar]), cellid]
-      }else{
-        return(babies[parent.id1 == pid1] <- NA) #If there is nowhere for the baby to live, it dies
-      }
-      
-      if(length(babycell) > 1){
-        return(babycell[1]) # If multiple available cells with max sugar, return first one
-      }
-      if(length(babycell) == 0){
-        return(babies[parent.id1 == pid1] <- NA) #If there is nowhere for the baby to live, it dies
-      }
-      else{
-        return(babycell)
-      }
-    }
-    # Pick cell and populate scape data.table with new agent
-    for(b in 1:nrow(babies)){
-      babies$cellid[b] <- pickcell.baby(pid1 = babies$parent.id1[b], pid2 = babies$parent.id2[b], dimension = max(scape$x))
-      scape[cellid == babies$cellid[b], 7:ncol(scape)] <<- babies[cellid == babies$cellid[b], 4:ncol(babies)]
-    }
-    max.agid <<- max(scape$agid, na.rm = T) # Update max agent ID
+    else{born <- c(born, 0)}
     
     n_agents <- c(n_agents, nrow(scape[agid > 0])) # Store new number of agents
     mean_vision <- c(mean_vision, mean(scape$agviz, na.rm = T)) # Store new mean population vision
@@ -412,58 +455,71 @@ iterate.gens <- function(iterations, store.plots = FALSE){
   names(returns) <- c("agents", "births", "mean.vision", "mean.metabolism", "Gini", "starved", "aged")
   return(returns)
 }
-do.sugarscape.gens()
-run1g <- iterate.gens(iterations = 50, store.plots = T)
-viz1g <- viz
 
-for(i in 1:length(viz1g)){
-  dev.copy(png, paste("defaultG_frame",i,".png", sep=""))
-  print(viz1g[[i]])
+do.sugarscape.gens(estate.rule = "tax")
+run1tax <- iterate.gens(iterations = 50, store.plots = T)
+viz1tax <- viz
+
+do.sugarscape.gens(estate.rule = "inheritance")
+run1inherit <- iterate.gens(iterations = 50, store.plots = T)
+viz1inherit <- viz
+
+for(i in 1:length(viz1tax)){
+  dev.copy(png, paste("taxation_frame",i,".png", sep=""))
+  print(viz1tax[[i]])
+  dev.off()
+}
+for(i in 1:length(viz1inherit)){
+  dev.copy(png, paste("inheritance_frame",i,".png", sep=""))
+  print(viz1inherit[[i]])
   dev.off()
 }
 
 # Carrying Capacity
-for(i in 1:length(run1g$agents)){
+for(i in 1:length(run1tax$agents)){
   if(i == 1){
     plot(-100, -100, xlim=c(1,50), ylim=c(0,1200), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
   }else{
-    segments(i-1, run1g$agents[i-1], i, run1g$agents[i], col = "green", lwd=2)
+    segments(i-1, run1tax$agents[i-1], i, run1tax$agents[i], col = "blue", lwd=2)
+    segments(i-1, run1inherit$agents[i-1], i, run1inherit$agents[i], col = "red", lwd=2)
   }
 }
 
 # Births by round
-for(i in 1:length(run1g$births)){
+for(i in 1:length(run1tax$births)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,50), ylim=c(0,100), ylab="Births", xlab="Iteration", type="n", cex.axis=0.8, main = "Births by Round")
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,20), ylab="Births", xlab="Iteration", type="n", cex.axis=0.8, main = "Births by Round")
   }else{
-    segments(i-1, run1g$births[i-1], i, run1g$births[i], col = "green", lwd=2)
+    segments(i-1, run1tax$births[i-1], i, run1tax$births[i], col = "blue", lwd=2)
+    segments(i-1, run1inherit$births[i-1], i, run1inherit$births[i], col = "red", lwd=2)  
   }
 }
 
 # Mean vision
-for(i in 1:length(run1g$mean.vision)){
+for(i in 1:length(run1tax$mean.vision)){
   if(i == 1){
     plot(-100, -100, xlim=c(1,50), ylim=c(1,6), ylab="Mean Vision", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Vision")
   }else{
-    segments(i-1, run1g$mean.vision[i-1], i, run1g$mean.vision[i], col = "green", lwd=2)
+    segments(i-1, run1tax$mean.vision[i-1], i, run1tax$mean.vision[i], col = "blue", lwd=2)
+    segments(i-1, run1inherit$mean.vision[i-1], i, run1inherit$mean.vision[i], col = "red", lwd=2)
   }
 }
 
 # Mean metabolism
-for(i in 1:length(run1g$mean.metabolism)){
+for(i in 1:length(run1tax$mean.metabolism)){
   if(i == 1){
     plot(-100, -100, xlim=c(1,50), ylim=c(0,5), ylab="Mean Metabolism", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Metabolism")
   }else{
-    segments(i-1, run1g$mean.metabolism[i-1], i, run1g$mean.metabolism[i], col = "green", lwd=2)
+    segments(i-1, run1tax$mean.metabolism[i-1], i, run1tax$mean.metabolism[i], col = "blue", lwd=2)
+    segments(i-1, run1inherit$mean.metabolism[i-1], i, run1inherit$mean.metabolism[i], col = "red", lwd=2)
   }
 }
 
-for(i in 1:length(run1g$Gini)){
+for(i in 1:length(run1tax$Gini)){
   if(i == 1){
     plot(-100, -100, xlim=c(1,50), ylim=c(0,1), ylab="Gini Coefficient", xlab="Iteration", type="n", cex.axis=0.8, main = "Wealth Inequality")
   }else{
-    segments(i-1, run1g$Gini[i-1], i, run1g$Gini[i], col = "green", lwd=2)
+    segments(i-1, run1tax$Gini[i-1], i, run1tax$Gini[i], col = "blue", lwd=2)
+    segments(i-1, run1inherit$Gini[i-1], i, run1inherit$Gini[i], col = "red", lwd=2)
   }
 }
-
-
