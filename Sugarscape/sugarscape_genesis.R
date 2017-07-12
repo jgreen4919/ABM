@@ -408,12 +408,12 @@ iterate.gens <- function(iterations, store.plots = FALSE){
     }
   }
   # Store vectors of characteristics in a list and return them
-  returns <- list(n_agents, mean_vision, mean_metab, gcoef, starved, aged)
-  names(returns) <- c("agents","mean.vision", "mean.metabolism", "Gini", "Starved", "Aged")
+  returns <- list(n_agents, born, mean_vision, mean_metab, gcoef, starved, aged)
+  names(returns) <- c("agents", "births", "mean.vision", "mean.metabolism", "Gini", "starved", "aged")
   return(returns)
 }
 do.sugarscape.gens()
-run1g <- iterate.gens(iterations = 30, store.plots = T)
+run1g <- iterate.gens(iterations = 50, store.plots = T)
 viz1g <- viz
 
 for(i in 1:length(viz1g)){
@@ -421,37 +421,48 @@ for(i in 1:length(viz1g)){
   print(viz1g[[i]])
   dev.off()
 }
-for(i in 1:length(run1$agents)){
+
+# Carrying Capacity
+for(i in 1:length(run1g$agents)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,30), ylim=c(0,700), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,700), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
   }else{
-    segments(i-1, run1$agents[i-1], i, run1$agents[i], col = "green", lwd=2)
+    segments(i-1, run1g$agents[i-1], i, run1g$agents[i], col = "green", lwd=2)
+  }
+}
+
+# Births by round
+for(i in 1:length(run1g$agents)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,700), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
+  }else{
+    segments(i-1, run1g$agents[i-1], i, run1g$agents[i], col = "green", lwd=2)
   }
 }
 
 # Mean vision
-for(i in 1:length(run1$mean.vision)){
+for(i in 1:length(run1g$mean.vision)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,30), ylim=c(1,6), ylab="Mean Vision", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Vision")
+    plot(-100, -100, xlim=c(1,50), ylim=c(1,6), ylab="Mean Vision", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Vision")
   }else{
-    segments(i-1, run1$mean.vision[i-1], i, run1$mean.vision[i], col = "green", lwd=2)
+    segments(i-1, run1g$mean.vision[i-1], i, run1g$mean.vision[i], col = "green", lwd=2)
   }
 }
 
 # Mean metabolism
-for(i in 1:length(run1$mean.metabolism)){
+for(i in 1:length(run1g$mean.metabolism)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,30), ylim=c(0,5), ylab="Mean Metabolism", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Metabolism")
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,5), ylab="Mean Metabolism", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Metabolism")
   }else{
-    segments(i-1, run1$mean.metabolism[i-1], i, run1$mean.metabolism[i], col = "green", lwd=2)
+    segments(i-1, run1g$mean.metabolism[i-1], i, run1g$mean.metabolism[i], col = "green", lwd=2)
   }
 }
 
-for(i in 1:length(run1$Gini)){
+for(i in 1:length(run1g$Gini)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,30), ylim=c(0,1), ylab="Gini Coefficient", xlab="Iteration", type="n", cex.axis=0.8, main = "Wealth Inequality")
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,1), ylab="Gini Coefficient", xlab="Iteration", type="n", cex.axis=0.8, main = "Wealth Inequality")
   }else{
-    segments(i-1, run1$Gini[i-1], i, run1$Gini[i], col = "green", lwd=2)
+    segments(i-1, run1g$Gini[i-1], i, run1g$Gini[i], col = "green", lwd=2)
   }
 }
 
