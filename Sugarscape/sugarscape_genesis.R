@@ -344,10 +344,10 @@ iterate.gens <- function(iterations, store.plots = FALSE){
                                     cur_agents[agid == babies$parent.id2[p], agmetab])/2)
       s1 <- round(cur_agents[agid == babies$parent.id1[p], agsugar]/2)
       s2 <- round(cur_agents[agid == babies$parent.id2[p], agsugar]/2)
-      babies$agsugar[p] <- s1+s2
+      babies$agsugar[p] <- s1+s2 # Baby gets endowment of rounded half of each parent's current sugar
       scape$agsugar <<- with(scape, ifelse(agid == babies$parent.id1[p], agsugar - s1, ifelse(
         agid == babies$parent.id2[p], agsugar - s2,
-        agsugar))) # decrement agent sugar by metabolic rate
+        agsugar))) # decrement agent sugar by amount endowed to child
       parents <- parents[! parents %in% babies[,c(parent.id1, parent.id2)]] 
     }
     
@@ -425,18 +425,18 @@ for(i in 1:length(viz1g)){
 # Carrying Capacity
 for(i in 1:length(run1g$agents)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,50), ylim=c(0,700), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,1200), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
   }else{
     segments(i-1, run1g$agents[i-1], i, run1g$agents[i], col = "green", lwd=2)
   }
 }
 
 # Births by round
-for(i in 1:length(run1g$agents)){
+for(i in 1:length(run1g$births)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,50), ylim=c(0,700), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,100), ylab="Births", xlab="Iteration", type="n", cex.axis=0.8, main = "Births by Round")
   }else{
-    segments(i-1, run1g$agents[i-1], i, run1g$agents[i], col = "green", lwd=2)
+    segments(i-1, run1g$births[i-1], i, run1g$births[i], col = "green", lwd=2)
   }
 }
 
