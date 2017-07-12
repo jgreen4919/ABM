@@ -18,7 +18,7 @@
 
 # The first function initiates world of x by x dimensions, populated by agnets with desity d. 
 # Each cell in the world has a sugar capacity c and initially has c amount of sugar. 
-# Each agent has an id, vision ranging from 1 to maxviz, and a store of sugar s.
+# Each agent has an id, vision ranging from 1 to maxviz, a metabolism specified in the function call, an age sampled from 1 to old.age, and a store of sugar s
 # When world is initialized, agent harvests the sugar in their initial cell
 
 do.sugarscape.gens <- function(dim = 50, popdens = .25, capacity = 4, grate = 1, old.age = 60,
@@ -456,6 +456,7 @@ iterate.gens <- function(iterations, store.plots = FALSE, estate.rule = er){
   return(returns)
 }
 
+# Run 50 iterations under each estate rule, store scape plots and visualize the results
 do.sugarscape.gens(estate.rule = "tax")
 run1tax <- iterate.gens(iterations = 50, store.plots = T)
 viz1tax <- viz
@@ -484,16 +485,20 @@ for(i in 1:length(run1tax$agents)){
     segments(i-1, run1inherit$agents[i-1], i, run1inherit$agents[i], col = "red", lwd=2)
   }
 }
+legend(x = 1, y = 200, legend = c("100% Estate Tax","100% Inheritance"), fill = c("blue","red"))
+
 
 # Births by round
 for(i in 1:length(run1tax$births)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,50), ylim=c(0,20), ylab="Births", xlab="Iteration", type="n", cex.axis=0.8, main = "Births by Round")
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,100), ylab="Births", xlab="Iteration", type="n", cex.axis=0.8, main = "Births by Round")
   }else{
     segments(i-1, run1tax$births[i-1], i, run1tax$births[i], col = "blue", lwd=2)
     segments(i-1, run1inherit$births[i-1], i, run1inherit$births[i], col = "red", lwd=2)  
   }
 }
+legend(x = 1, y = 80, legend = c("100% Estate Tax","100% Inheritance"), fill = c("blue","red"))
+
 
 # Mean vision
 for(i in 1:length(run1tax$mean.vision)){
@@ -504,6 +509,7 @@ for(i in 1:length(run1tax$mean.vision)){
     segments(i-1, run1inherit$mean.vision[i-1], i, run1inherit$mean.vision[i], col = "red", lwd=2)
   }
 }
+legend(x = 1, y = 2, legend = c("100% Estate Tax","100% Inheritance"), fill = c("blue","red"))
 
 # Mean metabolism
 for(i in 1:length(run1tax$mean.metabolism)){
@@ -514,6 +520,7 @@ for(i in 1:length(run1tax$mean.metabolism)){
     segments(i-1, run1inherit$mean.metabolism[i-1], i, run1inherit$mean.metabolism[i], col = "red", lwd=2)
   }
 }
+legend(x = 1, y = 1, legend = c("100% Estate Tax","100% Inheritance"), fill = c("blue","red"))
 
 for(i in 1:length(run1tax$Gini)){
   if(i == 1){
@@ -523,3 +530,4 @@ for(i in 1:length(run1tax$Gini)){
     segments(i-1, run1inherit$Gini[i-1], i, run1inherit$Gini[i], col = "red", lwd=2)
   }
 }
+legend(x = 1, y = .2, legend = c("100% Estate Tax","100% Inheritance"), fill = c("blue","red"))
