@@ -157,6 +157,7 @@ plotScape <- function(title = "Sugarscape"){
 
 # The last function specifies interaction rules for each round.
 iterate.gens <- function(iterations, store.plots = FALSE, estate.rule = er){
+  require(data.table)
   require(reldist)
   n_agents <- nrow(scape[agid > 0]) # Store initial number of agents
   mean_vision <- mean(scape$agviz, na.rm = T) # Store initial mean population vision
@@ -353,6 +354,7 @@ iterate.gens <- function(iterations, store.plots = FALSE, estate.rule = er){
     }
     
     n_babies <- length(cur_agents[!is.na(match.id), agid])/2 # Set number of children that will be conceived
+    if(n_babies > 0){
     
     # Set new data table to populate with children
     babies <- data.table(cellid = rep(NA, n_babies),
@@ -433,8 +435,9 @@ iterate.gens <- function(iterations, store.plots = FALSE, estate.rule = er){
       scape[cellid == babies$cellid[b], 7:ncol(scape)] <<- babies[cellid == babies$cellid[b], 4:ncol(babies)]
     }
     born <- c(born, nrow(babies[!is.na(babies$cellid)])) # Update vector of babies born in each round
-    
     max.agid <<- max(scape$agid, na.rm = T) # Update max agent ID
+    }
+    else{born <- c(born, 0)}
     
     n_agents <- c(n_agents, nrow(scape[agid > 0])) # Store new number of agents
     mean_vision <- c(mean_vision, mean(scape$agviz, na.rm = T)) # Store new mean population vision
@@ -482,7 +485,7 @@ for(i in 1:length(run1tax$agents)){
 # Births by round
 for(i in 1:length(run1tax$births)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,50), ylim=c(0,100), ylab="Births", xlab="Iteration", type="n", cex.axis=0.8, main = "Births by Round")
+    plot(-100, -100, xlim=c(1,50), ylim=c(0,20), ylab="Births", xlab="Iteration", type="n", cex.axis=0.8, main = "Births by Round")
   }else{
     segments(i-1, run1tax$births[i-1], i, run1tax$births[i], col = "blue", lwd=2)
     segments(i-1, run1inherit$births[i-1], i, run1inherit$births[i], col = "red", lwd=2)  
