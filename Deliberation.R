@@ -1,5 +1,14 @@
 # Deliberation ABM Replication (based on Lustick and Miodownick 2000)
 
+# Function to initialize the deliberative space. 
+# Takes dimension, opinion leader density, baseline repertoire size, number of arguments per position, and positions
+# Creates a list of argumentative spaces for each agent, with latent receptivity to each reason for and against
+  # Agents are more receptive to arguments for their position
+# Agents are assigned deliberative quality (opinion leaders are more likely to have higher deliberative skill)
+# Agents are assigned argument repertoires for and against their position, sampled from their deliberative space
+# Agents' confidence in their position is:
+  # sum of receptivity to the arguments in their for-repertoire, minus sum of receptivity to arguments in their against-repertoire
+
 do.delibspace <- function(dimension = 50, olead.dens = .1, baserep = 3, args = 10, positions = c("for","against")){
   require(msm)
   dim <<- dimension
@@ -77,6 +86,8 @@ test <- do.delibspace()
 agents <- test[[1]]
 argspace <- test[[2]]
 
+# Function to govern interaction rules between agents
+# Each round selects an agent at random and has them deliberate with another agent in their Moore neighborhood
 deliberate <- function(iterations){
   for(i in iterations){
     a <- sample(agents$agid, 1) # Pick an agent to deliberate
@@ -107,24 +118,15 @@ deliberate <- function(iterations){
     a.force <- agents[agid == a, dqual] * argspace[[p]][argspace[[p]]$position == arg.a[1] & argspace[[p]]$reason == arg.a[2]][,3]
     p.force <- agents[agid == p, dqual] * argspace[[a]][argspace[[a]]$position == arg.p[1] & argspace[[a]]$reason == arg.p[2]][,3]
     
-    # If agents agree on position, they reinforce their reasons
+    # If agents agree on position, they reinforce the reasons they gave
+    # If agents powerfully articulate their agreed-upon position, their reason is added to their partner's for-repertoire 
     if(arg.a[1] == arg.p[1]){
-      
+
+      }
     }
     # If agents disagree, they either move their interlocutor closer or push them away depending on the force of their argument
     if(arg.a[1] != arg.p[1]){
       
-    }
-
-    if(argqual.a > argqual.p){
-      agents[agid == p, o.rep[[1]]] <<- c(agents[agid == p, o.rep[[1]]], arg.a)
-      agents[agid == a, dqual] <<- agents[agid == a, dqual] + .1
-      if(agents[agid == a, dqual] > 1){agents[agid == a, dqual] <<- 1}
-    }
-    if(argqual.a < argqual.p){
-      agents[agid == a, o.rep[[1]]] <<- c(agents[agid == a, o.rep[[1]]], arg.p)
-      agents[agid == p, dqual] <<- agents[agid == p, dqual] + .1
-      if(agents[agid == p, dqual] > 1){agents[agid == p, dqual] <<- 1}
     }
 }
 
