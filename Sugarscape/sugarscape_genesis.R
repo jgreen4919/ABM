@@ -465,87 +465,94 @@ do.sugarscape.gens(estate.rule = "inheritance")
 run1inherit <- iterate.gens(iterations = 200, store.plots = T)
 viz1inherit <- viz
 
+do.sugarscape.gens(metabolism = 2:4, estate.rule = "tax")
+run2tax <- iterate.gens(iterations = 200, store.plots = T)
+viz2tax <- viz
+
+do.sugarscape.gens(metabolism = 2:4, estate.rule = "inheritance")
+run2inherit <- iterate.gens(iterations = 200, store.plots = T)
+viz2inherit <- viz
+
 setwd("~/Desktop/ABM/Sugarscape/Taxation")
-for(i in 1:length(viz1tax)){
-  dev.copy(png, paste("taxation_frame",i,".png", sep=""))
-  print(viz1tax[[i]])
+for(i in 1:length(viz2tax)){
+  dev.copy(png, paste("taxation2_frame",i,".png", sep=""))
+  print(viz2tax[[i]])
   dev.off()
 }
 
 setwd("~/Desktop/ABM/Sugarscape/Inheritance")
-for(i in 1:length(viz1inherit)){
-  dev.copy(png, paste("inheritance_frame",i,".png", sep=""))
-  print(viz1inherit[[i]])
+for(i in 1:length(viz2inherit)){
+  dev.copy(png, paste("inheritance2_frame",i,".png", sep=""))
+  print(viz2inherit[[i]])
   dev.off()
 }
 
 # Carrying Capacity
-for(i in 1:length(run1tax$agents)){
+for(i in 1:length(run2tax$agents)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,200), ylim=c(0,2500), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
+    plot(-100, -100, xlim=c(1,200), ylim=c(0,1000), ylab="Agents", xlab="Iteration", type="n", cex.axis=0.8, main = "Carrying Capacity")
   }else{
-    segments(i-1, run1tax$agents[i-1], i, run1tax$agents[i], col = "blue", lwd=2)
-    segments(i-1, run1inherit$agents[i-1], i, run1inherit$agents[i], col = "red", lwd=2)
+    segments(i-1, run2tax$agents[i-1], i, run2tax$agents[i], col = "blue", lwd=2)
+    segments(i-1, run2inherit$agents[i-1], i, run2inherit$agents[i], col = "red", lwd=2)
   }
 }
-legend(x = 100, y = 500, legend = c("100% Estate Tax","100% Inheritance"), fill = c("blue","red"))
+legend(x = 100, y = 200, legend = c("100% Estate Tax","100% Inheritance"), fill = c("blue","red"))
 
 
 # Births by round
-for(i in 1:length(run1tax$births)){
+for(i in 1:length(run2tax$births)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,200), ylim=c(0,100), ylab="Births", xlab="Iteration", type="n", cex.axis=0.8, main = "Births by Round")
+    plot(-100, -100, xlim=c(1,200), ylim=c(0,50), ylab="Births", xlab="Iteration", type="n", cex.axis=0.8, main = "Births by Round")
   }else{
-    segments(i-1, run1tax$births[i-1], i, run1tax$births[i], col = "blue", lwd=2)
-    segments(i-1, run1inherit$births[i-1], i, run1inherit$births[i], col = "red", lwd=2)  
+    segments(i-1, run2tax$births[i-1], i, run2tax$births[i], col = "blue", lwd=2)
+    segments(i-1, run2inherit$births[i-1], i, run2inherit$births[i], col = "red", lwd=2)  
   }
 }
-legend(x = 1, y = 80, legend = c("100% Estate Tax","100% Inheritance"), fill = c("blue","red"))
-
+legend(x = 100, y = 40, legend = c("100% Estate Tax","100% Inheritance"), fill = c("blue","red"))
 
 # Mean vision
-for(i in 1:length(run1tax$mean.vision)){
+for(i in 1:length(run2tax$mean.vision)){
   if(i == 1){
     plot(-100, -100, xlim=c(1,200), ylim=c(1,6), ylab="Mean Vision", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Vision")
   }else{
-    segments(i-1, run1tax$mean.vision[i-1], i, run1tax$mean.vision[i], col = "blue", lwd=2)
-    segments(i-1, run1inherit$mean.vision[i-1], i, run1inherit$mean.vision[i], col = "red", lwd=2)
+    segments(i-1, run2tax$mean.vision[i-1], i, run2tax$mean.vision[i], col = "blue", lwd=2)
+    segments(i-1, run2inherit$mean.vision[i-1], i, run2inherit$mean.vision[i], col = "red", lwd=2)
   }
 }
 legend(x = 1, y = 2, legend = c("100% Estate Tax","100% Inheritance"), fill = c("blue","red"))
 
 # Mean metabolism
-for(i in 1:length(run1tax$mean.metabolism)){
+for(i in 1:length(run2tax$mean.metabolism)){
   if(i == 1){
     plot(-100, -100, xlim=c(1,200), ylim=c(0,5), ylab="Mean Metabolism", xlab="Iteration", type="n", cex.axis=0.8, main = "Selection for Metabolism")
   }else{
-    segments(i-1, run1tax$mean.metabolism[i-1], i, run1tax$mean.metabolism[i], col = "blue", lwd=2)
-    segments(i-1, run1inherit$mean.metabolism[i-1], i, run1inherit$mean.metabolism[i], col = "red", lwd=2)
+    segments(i-1, run2tax$mean.metabolism[i-1], i, run2tax$mean.metabolism[i], col = "blue", lwd=2)
+    segments(i-1, run2inherit$mean.metabolism[i-1], i, run2inherit$mean.metabolism[i], col = "red", lwd=2)
   }
 }
 legend(x = 1, y = 1, legend = c("100% Estate Tax","100% Inheritance"), fill = c("blue","red"))
 
-for(i in 1:length(run1tax$Gini)){
+for(i in 1:length(run2tax$Gini)){
   if(i == 1){
     plot(-100, -100, xlim=c(1,200), ylim=c(0,1), ylab="Gini Coefficient", xlab="Iteration", type="n", cex.axis=0.8, main = "Wealth Inequality")
   }else{
-    segments(i-1, run1tax$Gini[i-1], i, run1tax$Gini[i], col = "blue", lwd=2)
-    segments(i-1, run1inherit$Gini[i-1], i, run1inherit$Gini[i], col = "red", lwd=2)
+    segments(i-1, run2tax$Gini[i-1], i, run2tax$Gini[i], col = "blue", lwd=2)
+    segments(i-1, run2inherit$Gini[i-1], i, run2inherit$Gini[i], col = "red", lwd=2)
   }
 }
 legend(x = 1, y = .2, legend = c("100% Estate Tax","100% Inheritance"), fill = c("blue","red"))
 
 
 # Vision / Metabolism
-for(i in 1:length(run1tax$mean.metabolism)){
+for(i in 1:length(run2tax$mean.metabolism)){
   if(i == 1){
     plot(-100, -100, xlim=c(1,200), ylim=c(0,4.5), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Vision / Metabolism")
   }else{
-    segments(i-1, run1tax$mean.metabolism[i-1], i, run1tax$mean.metabolism[i], col = "darkblue", lwd=2)
-    segments(i-1, run1tax$mean.vision[i-1], i, run1tax$mean.vision[i], col = "lightblue", lwd=2)
-    segments(i-1, run1inherit$mean.metabolism[i-1], i, run1inherit$mean.metabolism[i], col = "darkred", lwd=2)
-    segments(i-1, run1inherit$mean.vision[i-1], i, run1inherit$mean.vision[i], col = "pink", lwd=2)
+    segments(i-1, run2tax$mean.metabolism[i-1], i, run2tax$mean.metabolism[i], col = "darkblue", lwd=2)
+    segments(i-1, run2tax$mean.vision[i-1], i, run2tax$mean.vision[i], col = "lightblue", lwd=2)
+    segments(i-1, run2inherit$mean.metabolism[i-1], i, run2inherit$mean.metabolism[i], col = "darkred", lwd=2)
+    segments(i-1, run2inherit$mean.vision[i-1], i, run2inherit$mean.vision[i], col = "pink", lwd=2)
   }
 }
-legend(x = 1, y = 1, legend = c("Tax Metabolism","Tax Vision","Inherit Metabolism","Inherit Vision"), 
+legend(x = 1, y = 1.5, legend = c("Tax Metabolism","Tax Vision","Inherit Metabolism","Inherit Vision"), 
        fill = c("darkblue","lightblue","darkred","pink"))
