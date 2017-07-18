@@ -490,15 +490,23 @@ deliberate <- function(iterations){
   return(returns)
 }
 
-test <- do.delibspace()
-agents1 <- test[[1]]
-argspace1 <- test[[2]]
-run1 <- deliberate(10)
+init <- do.delibspace()
+agents1 <- init[[1]]
+argspace1 <- init[[2]]
+run1 <- deliberate(100)
+agents1c <- agents
 
-test2 <- do.delibspace(olead.dens = .2, base.dprop = .5, lead.dprop = .8)
-agents2 <- test2[[1]]
-argspace2 <- test2[[2]]
-run2 <- deliberate(10)
+init2 <- do.delibspace(olead.dens = .2, base.dprop = .5, lead.dprop = .8)
+agents2 <- init2[[1]]
+argspace2 <- init2[[2]]
+run2 <- deliberate(100)
+agents2c <- agents
+
+init3 <- do.delibspace(olead.dens = .3, base.dprop = .6, lead.dprop = .8)
+agents3 <- init3[[1]]
+argspace3 <- init3[[2]]
+run3 <- deliberate(100)
+agents3c <- agents
 
 plotDelib(dat = agents2, view = "p.conf")
 plotDelib(dat = agents, view = "p.conf")
