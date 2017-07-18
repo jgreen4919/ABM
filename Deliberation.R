@@ -440,23 +440,31 @@ deliberate <- function(iterations){
         sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]])
     })
     
+    # If position confidence falls below zero, flip positions
+    for(x in 1:nrow(agents){
+      if(agents$position[x] == "for" & agents$p.conf[x] < 0){
+        agents$position[x] <<- "against"
+        placeholder.prep <- agents$p.rep[x]
+        placeholder.orep <- agents$o.rep[x]
+        agents$p.rep[x] <<- placeholder.orep
+        agents$o.rep[x] <<- placeholder.prep
+      }
+      if(agents$position[x] == "against" & agents$p.conf[x] < 0){
+        agents$position[x] <<- "for"
+        placeholder.prep <- agents$p.rep[x]
+        placeholder.orep <- agents$o.rep[x]
+        agents$p.rep[x] <<- placeholder.orep
+        agents$o.rep[x] <<- placeholder.prep
+      }
+      else{next}
+    })
+    
     # Update repertoire sizes
     agents$p.repsize <<- sapply(agents$p.rep, function(x){
       length(x)
     })
     agents$o.repsize <<- sapply(agents$o.rep, function(x){
       length(x)
-    })
-    
-    # If position confidence falls below zero, flip positions
-    agents$position <<- sapply(1:nrow(agents), function(x){
-      if(agents$position[x] == "for" & agents$p.conf[x] < 0){
-        agents$position[x] <<- "against"
-      }
-      if(agents$position[x] == "against" & agents$p.conf[x] < 0){
-        agents$position[x] <<- "for"
-      }
-      else{agents$position[x] <<- agents$position[x]}
     })
   }
 }
@@ -482,6 +490,9 @@ plotDelib(dat = agents, view = "p.repsize")
 
 plotDelib(dat = agents2, view = "o.repsize")
 plotDelib(dat = agents, view = "o.repsize")
+
+plotDelib(dat = agents2, view = "p.conf")
+plotDelib(dat = agents, view = "p.conf")
 
 mean(agents2$p.repsize)
 mean(agents$p.repsize)
