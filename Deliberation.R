@@ -141,7 +141,7 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
       geom_point(data = dat, 
                  aes(x = x, y = y, color = dqual), 
                  size = 100/sqrt(prod(dims)))+
-      scale_colour_gradient(low = "white", high = "blue", limits = c(0,1))
+      scale_colour_gradient(name = "Deliberative Skill", low = "white", high = "blue", limits = c(0,1))
   }
   
   if(view == "dprop"){
@@ -150,7 +150,7 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
       geom_point(data = dat, 
                  aes(x = x, y = y, color = dprop), 
                  size = 100/sqrt(prod(dims)))+
-      scale_colour_gradient(low = "white", high = "blue", limits = c(0,1))
+      scale_colour_gradient(name = "Deliberation Propensity", low = "white", high = "blue", limits = c(0,1))
   }
   
   if(view == "p.conf"){
@@ -159,23 +159,25 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
       geom_point(data = dat, 
                  aes(x = x, y = y, color = p.conf), 
                  size = 100/sqrt(prod(dims)))+
-      scale_colour_gradient(low = "white", high = "blue", limits = c(0,max(dat$p.conf)))
+      scale_colour_gradient(name = "Position Confidence", low = "white", high = "blue", limits = c(0,max(dat$p.conf)))
   }
   if(view == "p.repsize"){
     p <- ggplot() + 
       # resize dots repertoire size
       geom_point(data = dat, 
-                 aes(x = x, y = y, color = p.conf, size = p.repsize/2))+
-      scale_colour_gradient(low = "white", high = "blue", limits = c(0,max(dat$p.conf)))
+                 aes(x = x, y = y, color = p.conf, size = p.repsize))+
+      scale_colour_gradient(name = "Position Confidence", low = "white", high = "blue", limits = c(0,max(dat$p.conf)))+
+      guides(size = guide_legend(title = "For-Repertoire Size"))
   }
   if(view == "o.repsize"){
     p <- ggplot() + 
       # resize dots to grid
       geom_point(data = dat, 
-                 aes(x = x, y = y, color = p.conf, size = o.repsize/2))+
-      scale_colour_gradient(low = "white", high = "blue", limits = c(0,max(dat$p.conf)))
+                 aes(x = x, y = y, color = p.conf, size = o.repsize))+
+      scale_colour_gradient(name = "Position Confidence", low = "white", high = "blue", limits = c(0,max(dat$p.conf)))+
+      guides(size = guide_legend(title = "Against-Repertoire Size"))
   }
-  
+ 
   # theme: mostly blank
   p <- p+
     theme_bw() + 
@@ -524,11 +526,8 @@ argspace3 <- argspace
 run3 <- deliberate(100)
 agents3c <- agents
 
-plotDelib(dat = agents1, view = "p.conf")
-plotDelib(dat = agents1c, view = "p.conf")
-
-agents1[x == 5 & y == 20]
-agents1c[x == 5 & y == 20]
+plotDelib(title = "Initial Deliberative Space", dat = agents1, view = "p.repsize")
+plotDelib(title = "Deliberative Space after 100 Rounds", dat = agents1c, view = "p.repsize")
 
 # Position Confidence
 for(i in 1:length(run3$mean.pconf)){
