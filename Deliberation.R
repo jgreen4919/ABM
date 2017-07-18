@@ -518,7 +518,7 @@ argspace2 <- argspace
 run2 <- deliberate(100)
 agents2c <- agents
 
-init3 <- do.delibspace(olead.dens = .3)
+init3 <- do.delibspace(olead.dens = .2, polarization = .3, base.dprop = .5, lead.dprop = .8)
 agents <- init3[[1]]
 agents3 <- agents
 argspace <- init3[[2]]
@@ -528,6 +528,21 @@ agents3c <- agents
 
 plotDelib(title = "Initial Deliberative Space", dat = agents1, view = "p.repsize")
 plotDelib(title = "Deliberative Space after 100 Rounds", dat = agents1c, view = "p.repsize")
+
+plotDelib(title = "Initial Deliberative Space", dat = agents3, view = "p.repsize")
+plotDelib(title = "Deliberative Space after 100 Rounds", dat = agents3c, view = "p.repsize")
+
+plotDelib(title = "Initial Deliberative Space", dat = agents3, view = "o.repsize")
+plotDelib(title = "Deliberative Space after 100 Rounds", dat = agents3c, view = "o.repsize")
+
+plotDelib(title = "Initial Deliberative Space", dat = agents3, view = "position")
+plotDelib(title = "Deliberative Space after 100 Rounds", dat = agents3c, view = "position")
+
+plotDelib(title = "Initial Deliberative Space", dat = agents3, view = "dqual")
+plotDelib(title = "Deliberative Space after 100 Rounds", dat = agents3c, view = "dqual")
+
+plotDelib(title = "Initial Deliberative Space", dat = agents3, view = "dprop")
+plotDelib(title = "Deliberative Space after 100 Rounds", dat = agents3c, view = "dprop")
 
 # Position Confidence
 for(i in 1:length(run3$mean.pconf)){
