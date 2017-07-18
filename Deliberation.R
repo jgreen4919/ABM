@@ -1,14 +1,20 @@
 # Deliberation ABM Replication (based on Lustick and Miodownick 2000)
 
 # Function to initialize the deliberative space. 
-# Takes dimension, opinion leader density, baseline repertoire size, number of arguments per position, and positions
+
+# Takes dimension, opinion leader density, polarization level, baseline and leader deliberation propensity and deliberative skill,
+  # baseline repertoire size, number of arguments per position, and positions
 # Creates a list of argumentative spaces for each agent, with latent receptivity to each reason for and against
   # Agents are more receptive to arguments for their position
-# Agents are assigned deliberative quality (opinion leaders are more likely to have higher deliberative skill)
+# Agents are assigned deliberative propensity and quality (opinion leaders are more likely to want to deliberate and have higher deliberative skill)
 # Agents are assigned argument repertoires for and against their position, sampled from their deliberative space
+  # Opinion leaders have larger for- and against-repertoires
 # Agents' confidence in their position is:
-  # sum of receptivity to the arguments in their for-repertoire, minus sum of receptivity to arguments in their against-repertoire
-do.delibspace <- function(dimension = 20, olead.dens = .1, base.dprop = .3, lead.dprop = .7, 
+  # sum of receptivity to the arguments in their for-repertoire, 
+    # minus sum of receptivity to arguments in their against-repertoire
+
+do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
+                          base.dprop = .3, lead.dprop = .7, 
                           base.dqual = .5, lead.dqual = .8,
                           baserep = 3, args = 10, positions = c("for","against")){
   if((baserep*2) > args){
@@ -16,7 +22,7 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, base.dprop = .3, lead
   }
   require(data.table)
   require(msm)
-
+  
   # Sets data table of agents
   agents <- data.table(agid = 1:(dimension*dimension),
                        x = rep(1:dimension, dimension),
@@ -42,10 +48,10 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, base.dprop = .3, lead
       position = rep(c("for","against"), each = args),
       reason = rep(1:args, length(positions)),
       if(agents$position[x] == "for"){
-        # Agents are more receptive to reasons for their position
-      lreceptive = c(rtnorm(10, mean = .7, sd = .2, lower = 0, upper = 1), rtnorm(10, mean = .3, sd = .2, lower = 0, upper = 1))
+        # Agents are more receptive to reasons for their position and less receptive to reasons against their position
+        lreceptive = c(rtnorm(10, mean = (.5 + polarization), sd = .2, lower = 0, upper = 1), rtnorm(10, mean = .3, sd = .2, lower = 0, upper = 1))
       }else{
-        lreceptive = c(rtnorm(10, mean = .3, sd = .2, lower = 0, upper = 1), rtnorm(10, mean = .7, sd = .2, lower = 0, upper = 1))
+        lreceptive = c(rtnorm(10, mean = (.5 - polarization), sd = .2, lower = 0, upper = 1), rtnorm(10, mean = .7, sd = .2, lower = 0, upper = 1))
       }
     )
   }
@@ -93,7 +99,7 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, base.dprop = .3, lead
       sample(argspace[[x]][argspace[[x]]$position != agents$position[x]]$reason, baserep) # Opinion leaders have larger against-repertoires 
     }else{
       sample(argspace[[x]][argspace[[x]]$position != agents$position[x]]$reason, 1)
-      }
+    }
   })
   
   agents$o.repsize <- sapply(agents$o.rep, function(x){
@@ -120,12 +126,12 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
   dims <- c(max(dat$x), max(dat$y))
   
   if(view == "position"){
-  # plot each agent's position
-  p <- ggplot() + 
-    # resize dots to grid
-    geom_point(data = dat, 
-               aes(x = x, y = y, color = position), 
-               size = 100/sqrt(prod(dims)))
+    # plot each agent's position
+    p <- ggplot() + 
+      # resize dots to grid
+      geom_point(data = dat, 
+                 aes(x = x, y = y, color = position), 
+                 size = 100/sqrt(prod(dims)))
   }
   
   if(view == "dqual"){
@@ -170,7 +176,7 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
       scale_colour_gradient(low = "white", high = "blue", limits = c(0,10))
   }
   
-    # theme: mostly blank
+  # theme: mostly blank
   p <- p+
     theme_bw() + 
     theme(axis.line = element_blank(),
@@ -200,22 +206,22 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
 # In each round, agents choose whether to deliberate with probability dprop
 # Agents match with partner in their Moore neighborhood who also wants to deliberate
 # Each agent makes an argument, represented by the combination of their position and one reason sampled from their repertoire
-  # Their argument's force is determined by their deliberative quality and their partner's receptivity to their stated reason
+# Their argument's force is determined by their deliberative quality and their partner's receptivity to their stated reason
 # If the agents agree:
-  # If an argument is powerful:
-    # The speaker's propensity to deliberate, deliberative quality, and receptivity to the reason given increase
-    # The argument is added to the listener's for-repertoire and their receptivity to the reason given increases
-  # If an argument is not powerful:
-    # Nothing happens
+# If an argument is powerful:
+# The speaker's propensity to deliberate, deliberative quality, and receptivity to the reason given increase
+# The argument is added to the listener's for-repertoire and their receptivity to the reason given increases
+# If an argument is not powerful:
+# Nothing happens
 # If the agents disagree
-  # If an argument is powerful:
-    # The speaker's propensity to deliberate, deliberative quality, and receptivity to the reason given increase
-    # The argument is added to the listener's against-repertoire and their receptivity to the reason given increases
-  # If an argument is not powerful:
-    # The speaker's propensity to deliberate decreases
-    # The listener's receptivity to the reason given decreases, and their receptivity to the reason they gave increases
+# If an argument is powerful:
+# The speaker's propensity to deliberate, deliberative quality, and receptivity to the reason given increase
+# The argument is added to the listener's against-repertoire and their receptivity to the reason given increases
+# If an argument is not powerful:
+# The speaker's propensity to deliberate decreases
+# The listener's receptivity to the reason given decreases, and their receptivity to the reason they gave increases
 # At the end of each round, everyone updates their position confidence
-  # Agents switch their position if position confidence falls below zero
+# Agents switch their position if position confidence falls below zero
 deliberate <- function(iterations){
   require(data.table)
   pct.for <- sum(agents$position == "for")/nrow(agents)
@@ -232,52 +238,52 @@ deliberate <- function(iterations){
     })
     
     ndelib <- c(ndelib, sum(agents$cdelib))
-
+    
     # Subfunction for agents to pick a deliberative partner (wrapped world)
     pickpartner <- function(x_value, y_value, dimension){
       cur_ag <- agents[x == x_value & y == y_value, agid] # Store current agent ID
       if(cur_ag %in% agents$dpart){
         return(agents[agents$dpart == cur_ag, agid]) # If agent has already been claimed as a deliberative partner, match them with the agent who claimed them
       }else{
-      x_vals <- c(x_value+1, x_value, x_value-1) # Look left and right
-      x_vals <- sapply(x_vals, function(x){
-        if(x < 1){x = dimension} 
-        if(x > dimension){x = 1}
-        else{x}})
-      
-      y_vals <- c(y_value+1, y_value, y_value-1) # Look up and down
-      y_vals <- sapply(y_vals, function(x){
-        if(x < 1){x = dimension}
-        if(x > dimension){x = 1}
-        else{x}})
-      
-      # Return agent IDs in Moore Neighborhood who want to deliberate but don't already have a partner
-      delib.ids <- agents[x %in% x_vals & y %in% y_vals & cdelib == TRUE & agid != cur_ag, agid] # Deliberating agents in Moore neighborhood
-      delib.ids <- delib.ids[! delib.ids %in% agents$dpart] # Subtract agents who are already in list of partners
-      delib.ids <- delib.ids[! delib.ids %in% agents$agid[!is.na(agents$dpart)]] # Subtract agents who already have partners
-      if(length(delib.ids) == 0){
-        return(NA)
-      }
-      if(length(delib.ids) == 1){
-        return(delib.ids)
-      }else{
-      return(sample(delib.ids, 1)) # Return one agent from Moore neighborhood who isn't already partnered up
-      }
+        x_vals <- c(x_value+1, x_value, x_value-1) # Look left and right
+        x_vals <- sapply(x_vals, function(x){
+          if(x < 1){x = dimension} 
+          if(x > dimension){x = 1}
+          else{x}})
+        
+        y_vals <- c(y_value+1, y_value, y_value-1) # Look up and down
+        y_vals <- sapply(y_vals, function(x){
+          if(x < 1){x = dimension}
+          if(x > dimension){x = 1}
+          else{x}})
+        
+        # Return agent IDs in Moore Neighborhood who want to deliberate but don't already have a partner
+        delib.ids <- agents[x %in% x_vals & y %in% y_vals & cdelib == TRUE & agid != cur_ag, agid] # Deliberating agents in Moore neighborhood
+        delib.ids <- delib.ids[! delib.ids %in% agents$dpart] # Subtract agents who are already in list of partners
+        delib.ids <- delib.ids[! delib.ids %in% agents$agid[!is.na(agents$dpart)]] # Subtract agents who already have partners
+        if(length(delib.ids) == 0){
+          return(NA)
+        }
+        if(length(delib.ids) == 1){
+          return(delib.ids)
+        }else{
+          return(sample(delib.ids, 1)) # Return one agent from Moore neighborhood who isn't already partnered up
+        }
       }
     }
     agents$dpart <<- NA
     for(p in 1:nrow(agents)){
       if(agents$cdelib[p] == FALSE) {next}
       # Agents who want to deliberate partner up
-        agents$dpart[p] <<- pickpartner(x_value = agents[agid == p, x], y_value = agents[agid == p, y], dimension = max(agents$x))
+      agents$dpart[p] <<- pickpartner(x_value = agents[agid == p, x], y_value = agents[agid == p, y], dimension = max(agents$x))
     } 
-
+    
     delibs <- agents$agid[!is.na(agents$dpart)] # Vector of agents who are deliberating this round
     
     delibspace <- subset(agents, agid %in% delibs, select = c(1:5)) # Store sub-data table to track reasons and argument forces by round (might use later)
     delibspace$reas <- NA
     delibspace$force <- NA
-
+    
     for(i in 1:(length(delibs)/2)){
       # Deliberation between first agent in delibs vector and their partner
       a <- delibs[1]
@@ -288,7 +294,7 @@ deliberate <- function(iterations){
       a.reas <- sample(agents[agid == a, p.rep[[1]]], 1)
       p.pos <- agents[agid == p, position]
       p.reas <- sample(agents[agid == p, p.rep[[1]]], 1)
-
+      
       # Force of agent's argument = agent's deliberative quality * listener's receptivity to the reason they give
       a.force <- agents[agid == a, dqual] * argspace[[p]][argspace[[p]]$position == a.pos & argspace[[p]]$reason == a.reas][,3]
       p.force <- agents[agid == p, dqual] * argspace[[a]][argspace[[a]]$position == p.pos & argspace[[a]]$reason == p.reas][,3]
@@ -315,7 +321,7 @@ deliberate <- function(iterations){
             .1*argspace[[a]][argspace[[a]]$position == a.pos & argspace[[a]]$reason == a.reas][,3]
           if(argspace[[a]][argspace[[a]]$position == a.pos & argspace[[a]]$reason == a.reas][,3] > 1){
             argspace[[a]][argspace[[a]]$position == a.pos & argspace[[a]]$reason == a.reas][,3] <<- 1
-            }
+          }
           
           # The argument is added to the listener's for-repertoire and their receptivity to the reason given increases by 10%, capped at 1
           agents$p.rep[p][[1]] <<- unique(as.numeric(c(agents$p.rep[p][[1]], a.reas)))
