@@ -218,10 +218,20 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
   # Agents switch their position if position confidence falls below zero
 deliberate <- function(iterations){
   require(data.table)
-  for(i in iterations){
+  pct.for <- sum(agents$position == "for")/nrow(agents)
+  mean.dqual <- mean(agents$dqual)
+  mean.dprop <- mean(agents$dprop)
+  mean.prepsize <- mean(agents$p.repsize)
+  mean.orepsize <- mean(agents$o.repsize)
+  mean.pconf <- mean(agents$p.conf)
+  ndelib <- 0
+  for(i in 1:iterations){
+    
     agents$cdelib <<- sapply(1:nrow(agents), function(x){
       agents$dprop[x] > runif(1) # Each agent chooses whether to deliberate in this round
     })
+    
+    ndelib <- c(ndelib, sum(agents$cdelib))
 
     # Subfunction for agents to pick a deliberative partner (wrapped world)
     pickpartner <- function(x_value, y_value, dimension){
@@ -433,7 +443,7 @@ deliberate <- function(iterations){
       # Once deliberation has concluded, remove partners from delibs before the next iteration
       delibs <- delibs[-which(delibs %in% c(a,p))]
     }
-    # When loop finishes:
+    # When loop for this round of deliberation finishes:
     # Update position confidences
     agents$p.conf <<- sapply(1:nrow(agents), function(x){
       agents$p.conf[x] <<- sum(argspace[[x]][,3][argspace[[x]]$position == agents$position[x]][agents$p.rep[x][[1]]]) -
@@ -466,39 +476,49 @@ deliberate <- function(iterations){
     agents$o.repsize <<- sapply(agents$o.rep, function(x){
       length(x)
     })
+    
+    # Update vectors of values to store
+    pct.for <- c(pct.for, sum(agents$position == "for")/nrow(agents))
+    mean.dqual <- c(mean.dqual, mean(agents$dqual))
+    mean.dprop <- c(mean.dprop, mean(agents$dprop))
+    mean.prepsize <- c(mean.prepsize, mean(agents$p.repsize))
+    mean.orepsize <- c(mean.orepsize, mean(agents$o.repsize))
+    mean.pconf <- c(mean.pconf, mean(agents$p.conf))
   }
+  returns <- list(pct.for, ndelib, mean.dqual, mean.dprop, mean.prepsize, mean.orepsize, mean.pconf)
+  names(returns) <- c("pct.for","num.delib","mean.dqual","mean.dprop","mean.prepsize","mean.orepsize","mean.pconf")
+  return(returns)
 }
+
 test <- do.delibspace()
 agents1 <- test[[1]]
 argspace1 <- test[[2]]
-plotDelib(dat = agents1, view = "p.repsize")
-
-deliberate(100000)
-plotDelib(dat = agents1, view = "p.repsize")
-plotDelib(dat = agents, view = "p.repsize")
-plotDelib(dat = agents1, view = "o.repsize")
-plotDelib(dat = agents, view = "o.repsize")
-mean(agents1$o.repsize)
-mean(agents$o.repsize)
+run1 <- deliberate(10)
 
 test2 <- do.delibspace(olead.dens = .2, base.dprop = .5, lead.dprop = .8)
 agents2 <- test2[[1]]
 argspace2 <- test2[[2]]
-deliberate(100000)
-plotDelib(dat = agents2, view = "p.repsize")
-plotDelib(dat = agents, view = "p.repsize")
-
-plotDelib(dat = agents2, view = "o.repsize")
-plotDelib(dat = agents, view = "o.repsize")
+run2 <- deliberate(10)
 
 plotDelib(dat = agents2, view = "p.conf")
 plotDelib(dat = agents, view = "p.conf")
+var(agents2$p.conf)
+var(agents$p.conf)
 
-mean(agents2$p.repsize)
-mean(agents$p.repsize)
+var(agents2$dprop)
+var(agents$dprop)
 
-table(agents$position)
-table(agents2$position)
+hist(agents2$o.repsize)
+hist(agents$o.repsize)
 
+# Percent in favor
+for(i in 1:length(run2$mean.pconf)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,10), ylim=c(0,6), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Position Confidence")
+  }else{
+    segments(i-1, run1$mean.pconf[i-1], i, run1$mean.pconf[i], col = "blue", lwd=2)
+    segments(i-1, run2$mean.pconf[i-1], i, run2$mean.pconf[i], col = "red", lwd=2)
+  }
+}
 
 
