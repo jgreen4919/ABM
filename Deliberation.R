@@ -441,7 +441,7 @@ deliberate <- function(iterations){
     })
     
     # If position confidence falls below zero, flip positions
-    for(x in 1:nrow(agents){
+    for(x in 1:nrow(agents)){
       if(agents$position[x] == "for" & agents$p.conf[x] < 0){
         agents$position[x] <<- "against"
         placeholder.prep <- agents$p.rep[x]
@@ -457,7 +457,7 @@ deliberate <- function(iterations){
         agents$o.rep[x] <<- placeholder.prep
       }
       else{next}
-    })
+    }
     
     # Update repertoire sizes
     agents$p.repsize <<- sapply(agents$p.rep, function(x){
