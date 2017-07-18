@@ -508,8 +508,8 @@ argspace3 <- init3[[2]]
 run3 <- deliberate(100)
 agents3c <- agents
 
-plotDelib(dat = agents2, view = "p.conf")
-plotDelib(dat = agents, view = "p.conf")
+plotDelib(dat = agents3, view = "p.conf")
+plotDelib(dat = agents3c, view = "p.conf")
 var(agents2$p.conf)
 var(agents$p.conf)
 
@@ -519,13 +519,80 @@ var(agents$dprop)
 hist(agents2$o.repsize)
 hist(agents$o.repsize)
 
-# Percent in favor
-for(i in 1:length(run2$mean.pconf)){
+# Position Confidence
+for(i in 1:length(run3$mean.pconf)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,10), ylim=c(0,6), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Position Confidence")
+    plot(-100, -100, xlim=c(1,100), ylim=c(2,4), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Position Confidence")
   }else{
     segments(i-1, run1$mean.pconf[i-1], i, run1$mean.pconf[i], col = "blue", lwd=2)
     segments(i-1, run2$mean.pconf[i-1], i, run2$mean.pconf[i], col = "red", lwd=2)
+    segments(i-1, run3$mean.pconf[i-1], i, run3$mean.pconf[i], col = "green", lwd=2)
+  }
+}
+
+# Percent in favor
+for(i in 1:length(run3$pct.for)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,100), ylim=c(.45, .55), ylab="Percent", xlab="Iteration", type="n", cex.axis=0.8, main = "Percent in Favor")
+  }else{
+    segments(i-1, run1$pct.for[i-1], i, run1$pct.for[i], col = "blue", lwd=2)
+    segments(i-1, run2$pct.for[i-1], i, run2$pct.for[i], col = "red", lwd=2)
+    segments(i-1, run3$pct.for[i-1], i, run3$pct.for[i], col = "green", lwd=2)
+  }
+}
+
+# Mean Deliberative Quality
+for(i in 1:length(run3$pct.for)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,100), ylim=c(.4,.6), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean Deliberative Quality")
+  }else{
+    segments(i-1, run1$mean.dqual[i-1], i, run1$mean.dqual[i], col = "blue", lwd=2)
+    segments(i-1, run2$mean.dqual[i-1], i, run2$mean.dqual[i], col = "red", lwd=2)
+    segments(i-1, run3$mean.dqual[i-1], i, run3$mean.dqual[i], col = "green", lwd=2)
+  }
+}
+
+# Mean Propensity to Deliberate
+for(i in 1:length(run3$pct.for)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,100), ylim=c(.35, .45), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean Propensity to Deliberate")
+  }else{
+    segments(i-1, run1$mean.dprop[i-1], i, run1$mean.dprop[i], col = "blue", lwd=2)
+    segments(i-1, run2$mean.dprop[i-1], i, run2$mean.dprop[i], col = "red", lwd=2)
+    segments(i-1, run3$mean.dprop[i-1], i, run3$mean.dprop[i], col = "green", lwd=2)
+  }
+}
+
+# Mean For-Repertoire Size
+for(i in 1:length(run3$pct.for)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,100), ylim=c(3,5), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean For-Repertoire Size")
+  }else{
+    segments(i-1, run1$mean.prepsize[i-1], i, run1$mean.prepsize[i], col = "blue", lwd=2)
+    segments(i-1, run2$mean.prepsize[i-1], i, run2$mean.prepsize[i], col = "red", lwd=2)
+    segments(i-1, run3$mean.prepsize[i-1], i, run3$mean.prepsize[i], col = "green", lwd=2)
+  }
+}
+
+# Mean Against-Repertoire Size
+for(i in 1:length(run3$pct.for)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,100), ylim=c(1,2), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean Against-Repertoire Size")
+  }else{
+    segments(i-1, run1$mean.orepsize[i-1], i, run1$mean.orepsize[i], col = "blue", lwd=2)
+    segments(i-1, run2$mean.orepsize[i-1], i, run2$mean.orepsize[i], col = "red", lwd=2)
+    segments(i-1, run3$mean.orepsize[i-1], i, run3$mean.orepsize[i], col = "green", lwd=2)
+  }
+}
+
+# Number deliberating each round
+for(i in 1:length(run3$pct.for)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,100), ylim=c(100,200), ylab="Number", xlab="Iteration", type="n", cex.axis=0.8, main = "Number Deliberating Each Round")
+  }else{
+    segments(i-1, run1$num.delib[i-1], i, run1$num.delib[i], col = "blue", lwd=2)
+    segments(i-1, run2$num.delib[i-1], i, run2$num.delib[i], col = "red", lwd=2)
+    segments(i-1, run3$num.delib[i-1], i, run3$num.delib[i], col = "green", lwd=2)
   }
 }
 
