@@ -117,6 +117,7 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
 }
 
 # Function to plot the deliberative space
+  # Plots different round, depending on dat, and different aspect of deliberative space, depending on view
 plotDelib <- function(title = "Deliberative Space", dat = agents, view = "position"){
   require(data.table)
   require(ggplot2)
@@ -162,18 +163,17 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
   }
   if(view == "p.repsize"){
     p <- ggplot() + 
-      # resize dots to grid
+      # resize dots repertoire size
       geom_point(data = dat, 
-                 aes(x = x, y = y, color = p.repsize, size = p.conf))+
-      scale_colour_gradient(low = "white", high = "blue", limits = c(0,10))
+                 aes(x = x, y = y, color = p.conf, size = p.repsize/2))+
+      scale_colour_gradient(low = "white", high = "blue", limits = c(0,max(dat$p.conf)))
   }
   if(view == "o.repsize"){
     p <- ggplot() + 
       # resize dots to grid
       geom_point(data = dat, 
-                 aes(x = x, y = y, color = o.repsize), 
-                 size = 100/sqrt(prod(dims)))+
-      scale_colour_gradient(low = "white", high = "blue", limits = c(0,10))
+                 aes(x = x, y = y, color = p.conf, size = o.repsize/2))+
+      scale_colour_gradient(low = "white", high = "blue", limits = c(0,max(dat$p.conf)))
   }
   
   # theme: mostly blank
@@ -203,25 +203,27 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
 }
 
 # Function to govern interaction rules between agents
+
 # In each round, agents choose whether to deliberate with probability dprop
 # Agents match with partner in their Moore neighborhood who also wants to deliberate
 # Each agent makes an argument, represented by the combination of their position and one reason sampled from their repertoire
 # Their argument's force is determined by their deliberative quality and their partner's receptivity to their stated reason
 # If the agents agree:
-# If an argument is powerful:
-# The speaker's propensity to deliberate, deliberative quality, and receptivity to the reason given increase
-# The argument is added to the listener's for-repertoire and their receptivity to the reason given increases
-# If an argument is not powerful:
-# Nothing happens
+  # If an argument is powerful:
+    # The speaker's propensity to deliberate, deliberative quality, and receptivity to the reason given increase
+    # The argument is added to the listener's for-repertoire and their receptivity to the reason given increases
+  # If an argument is not powerful:
+    # Nothing happens
 # If the agents disagree
-# If an argument is powerful:
-# The speaker's propensity to deliberate, deliberative quality, and receptivity to the reason given increase
-# The argument is added to the listener's against-repertoire and their receptivity to the reason given increases
-# If an argument is not powerful:
-# The speaker's propensity to deliberate decreases
-# The listener's receptivity to the reason given decreases, and their receptivity to the reason they gave increases
+  # If an argument is powerful:
+    # The speaker's propensity to deliberate, deliberative quality, and receptivity to the reason given increase
+    # The argument is added to the listener's against-repertoire and their receptivity to the reason given increases
+  # If an argument is not powerful:
+    # The speaker's propensity to deliberate decreases
+    # The listener's receptivity to the reason given decreases, and their receptivity to the reason they gave increases
 # At the end of each round, everyone updates their position confidence
 # Agents switch their position if position confidence falls below zero
+
 deliberate <- function(iterations){
   require(data.table)
   pct.for <- sum(agents$position == "for")/nrow(agents)
@@ -458,21 +460,23 @@ deliberate <- function(iterations){
     
     # If position confidence falls below zero, flip positions
     for(x in 1:nrow(agents)){
-      if(agents$position[x] == "for" & agents$p.conf[x] < 0){
+      if(agents$p.conf[x] >= 0){next}
+      else{
+      if(agents$position[x] == "for"){
         agents$position[x] <<- "against"
         placeholder.prep <- agents$p.rep[x]
         placeholder.orep <- agents$o.rep[x]
         agents$p.rep[x] <<- placeholder.orep
         agents$o.rep[x] <<- placeholder.prep
       }
-      if(agents$position[x] == "against" & agents$p.conf[x] < 0){
+      if(agents$position[x] == "against"){
         agents$position[x] <<- "for"
         placeholder.prep <- agents$p.rep[x]
         placeholder.orep <- agents$o.rep[x]
         agents$p.rep[x] <<- placeholder.orep
         agents$o.rep[x] <<- placeholder.prep
       }
-      else{next}
+      }
     }
     
     # Update repertoire sizes
@@ -497,33 +501,34 @@ deliberate <- function(iterations){
 }
 
 init <- do.delibspace()
-agents1 <- init[[1]]
-argspace1 <- init[[2]]
+agents <- init[[1]]
+agents1 <- agents
+argspace <- init[[2]]
+argspace1 <- argspace
 run1 <- deliberate(100)
 agents1c <- agents
 
-init2 <- do.delibspace(olead.dens = .2, base.dprop = .5, lead.dprop = .8)
-agents2 <- init2[[1]]
-argspace2 <- init2[[2]]
+init2 <- do.delibspace(olead.dens = .2)
+agents <- init2[[1]]
+agents2 <- agents
+argspace <- init2[[2]]
+argspace2 <- argspace
 run2 <- deliberate(100)
 agents2c <- agents
 
-init3 <- do.delibspace(olead.dens = .3, base.dprop = .6, lead.dprop = .8)
-agents3 <- init3[[1]]
-argspace3 <- init3[[2]]
+init3 <- do.delibspace(olead.dens = .3)
+agents <- init3[[1]]
+agents3 <- agents
+argspace <- init3[[2]]
+argspace3 <- argspace
 run3 <- deliberate(100)
 agents3c <- agents
 
-plotDelib(dat = agents3, view = "p.conf")
-plotDelib(dat = agents3c, view = "p.conf")
-var(agents2$p.conf)
-var(agents$p.conf)
+plotDelib(dat = agents1, view = "p.conf")
+plotDelib(dat = agents1c, view = "p.conf")
 
-var(agents2$dprop)
-var(agents$dprop)
-
-hist(agents2$o.repsize)
-hist(agents$o.repsize)
+agents1[x == 5 & y == 20]
+agents1c[x == 5 & y == 20]
 
 # Position Confidence
 for(i in 1:length(run3$mean.pconf)){
@@ -561,13 +566,14 @@ for(i in 1:length(run3$pct.for)){
 # Mean Propensity to Deliberate
 for(i in 1:length(run3$pct.for)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,100), ylim=c(.35, .45), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean Propensity to Deliberate")
+    plot(-100, -100, xlim=c(1,100), ylim=c(.35, .45), ylab="Value", xlab="Round", type="n", cex.axis=0.8, main = "Mean Propensity to Deliberate")
   }else{
     segments(i-1, run1$mean.dprop[i-1], i, run1$mean.dprop[i], col = "blue", lwd=2)
     segments(i-1, run2$mean.dprop[i-1], i, run2$mean.dprop[i], col = "red", lwd=2)
     segments(i-1, run3$mean.dprop[i-1], i, run3$mean.dprop[i], col = "green", lwd=2)
   }
 }
+legend(x = 60, y = .44, legend = c("10% Leaders","20% Leaders","30% Leaders"), fill = c("blue","red","green"))
 
 # Mean For-Repertoire Size
 for(i in 1:length(run3$pct.for)){
