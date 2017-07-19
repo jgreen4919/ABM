@@ -54,6 +54,8 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
         lreceptive = c(rtnorm(10, mean = (.5 - polarization), sd = .2, lower = 0, upper = 1), rtnorm(10, mean = .7, sd = .2, lower = 0, upper = 1))
       }
     )
+    argspace[[x]][,voiced := rep(0, 2*args)]
+    argspace[[x]][,heard := rep(0, 2*args)]
   }
   )
   
@@ -301,6 +303,16 @@ deliberate <- function(iterations){
       p.pos <- agents[agid == p, position]
       p.reas <- sample(agents[agid == p, p.rep[[1]]], 1)
       
+      argspace[[a]]$voiced[argspace[[a]]$position == a.pos & argspace[[a]]$reason == a.reas] <<-
+        argspace[[a]]$voiced[argspace[[a]]$position == a.pos & argspace[[a]]$reason == a.reas] + 1
+      argspace[[p]]$voiced[argspace[[p]]$position == p.pos & argspace[[p]]$reason == p.reas] <<-
+        argspace[[p]]$voiced[argspace[[p]]$position == p.pos & argspace[[p]]$reason == p.reas] + 1
+      
+      argspace[[a]]$heard[argspace[[a]]$position == p.pos & argspace[[a]]$reason == p.reas] <<-
+        argspace[[a]]$heard[argspace[[a]]$position == p.pos & argspace[[a]]$reason == p.reas] + 1
+      argspace[[p]]$heard[argspace[[p]]$position == a.pos & argspace[[p]]$reason == a.reas] <<-
+        argspace[[p]]$heard[argspace[[p]]$position == a.pos & argspace[[p]]$reason == a.reas] + 1
+      
       # Force of agent's argument = agent's deliberative quality * listener's receptivity to the reason they give
       a.force <- agents[agid == a, dqual] * argspace[[p]][argspace[[p]]$position == a.pos & argspace[[p]]$reason == a.reas][,3]
       p.force <- agents[agid == p, dqual] * argspace[[a]][argspace[[a]]$position == p.pos & argspace[[a]]$reason == p.reas][,3]
@@ -315,12 +327,9 @@ deliberate <- function(iterations){
       if(a.pos == p.pos){
         # If an argument is powerful (note: lower threshold for powerful arguments if agents agree):
         if(a.force > (agents[agid == p, dqual]/2)){
-          # The speaker's propensity to deliberate, deliberative quality, and receptivity to the reason given increase by 10%, capped at 1
+          # The speaker's propensity to deliberate and receptivity to the reason given increase by 10%, capped at 1
           agents$dprop[a] <<- agents$dprop[a] + .1*agents$dprop[a]
           if(agents$dprop[a] > 1){agents$dprop[a] <<- 1}
-          
-          agents$dqual[a] <<- agents$dqual[a] + .1*agents$dqual[a]
-          if(agents$dqual[a] > 1){agents$dqual[a] <<- 1}
           
           argspace[[a]][argspace[[a]]$position == a.pos & argspace[[a]]$reason == a.reas][,3] <<- 
             argspace[[a]][argspace[[a]]$position == a.pos & argspace[[a]]$reason == a.reas][,3] + 
@@ -339,13 +348,10 @@ deliberate <- function(iterations){
           }
         }
         if(p.force > (agents[agid == a, dqual]/2)){
-          # The speaker's propensity to deliberate, deliberative quality, and receptivity to the reason given increase by 10%, capped at 1
+          # The speaker's propensity to deliberate and receptivity to the reason given increase by 10%, capped at 1
           agents$dprop[p] <<- agents$dprop[p] + .1*agents$dprop[p]
           if(agents$dprop[p] > 1){agents$dprop[p] <<- 1}
-          
-          agents$dqual[p] <<- agents$dqual[p] + .1*agents$dqual[p]
-          if(agents$dqual[p] > 1){agents$dqual[p] <<- 1}
-          
+
           argspace[[p]][argspace[[p]]$position == p.pos & argspace[[p]]$reason == p.reas][,3] <<- 
             argspace[[p]][argspace[[p]]$position == p.pos & argspace[[p]]$reason == p.reas][,3] + 
             .1*argspace[[p]][argspace[[p]]$position == p.pos & argspace[[p]]$reason == p.reas][,3]
@@ -361,7 +367,7 @@ deliberate <- function(iterations){
           if(argspace[[a]][argspace[[a]]$position == p.pos & argspace[[a]]$reason == p.reas][,3] > 1){
             argspace[[a]][argspace[[a]]$position == p.pos & argspace[[a]]$reason == p.reas][,3] <<- 1
           }
-        }else{next} # If an agreeable argument is not powerful, nothing happens
+        } # If an agreeable argument is not powerful, nothing happens
       }
       # If the agents disagree:
       if(a.pos != p.pos){
@@ -370,7 +376,7 @@ deliberate <- function(iterations){
           # The speaker's propensity to deliberate, deliberative quality, and receptivity to the reason given increase by 10%, capped at 1
           agents$dprop[a] <<- agents$dprop[a] + .1*agents$dprop[a]
           if(agents$dprop[a] > 1){agents$dprop[a] <<- 1}
-          
+
           agents$dqual[a] <<- agents$dqual[a] + .1*agents$dqual[a]
           if(agents$dqual[a] > 1){agents$dqual[a] <<- 1}
           
@@ -450,7 +456,7 @@ deliberate <- function(iterations){
               argspace[[a]][argspace[[a]]$position == a.pos & argspace[[a]]$reason == a.reas][,3] <<- 1
             }
           }
-        }else{next} # If an argument is neither powerful nor weak, nothing happens
+        } # If an argument is neither powerful nor weak, nothing happens
       }
       # Once deliberation has concluded, remove partners from delibs before the next iteration
       delibs <- delibs[-which(delibs %in% c(a,p))]
@@ -469,14 +475,14 @@ deliberate <- function(iterations){
         nflip <- nflip +1
         if(agents$position[z] == "for"){
           agents$position[z] <<- "against"
-          }else{agents$position[z] <<- "for"}
-          placeholder.prep <- agents$p.rep[z][[1]]
-          placeholder.orep <- agents$o.rep[z][[1]]
-          agents$p.rep[z][[1]] <<- placeholder.orep
-          agents$o.rep[z][[1]] <<- placeholder.prep
-        }
+        }else{agents$position[z] <<- "for"}
+        placeholder.prep <- agents$p.rep[z][[1]]
+        placeholder.orep <- agents$o.rep[z][[1]]
+        agents$p.rep[z][[1]] <<- placeholder.orep
+        agents$o.rep[z][[1]] <<- placeholder.prep
       }
-
+    }
+    
     # Update repertoire sizes
     agents$p.repsize <<- sapply(agents$p.rep, function(x){
       length(x)
