@@ -7,6 +7,7 @@ argspace <- init[[2]]
 argspace1 <- argspace
 run1 <- deliberate(100)
 agents1c <- agents
+argspace1c <- argspace
 
 init2 <- do.delibspace(olead.dens = .2)
 agents <- init2[[1]]
@@ -15,6 +16,7 @@ argspace <- init2[[2]]
 argspace2 <- argspace
 run2 <- deliberate(100)
 agents2c <- agents
+argspace2c <- argspace
 
 init3 <- do.delibspace(olead.dens = .2, polarization = .3, base.dprop = .5, lead.dprop = .8)
 agents <- init3[[1]]
@@ -23,6 +25,25 @@ argspace <- init3[[2]]
 argspace3 <- argspace
 run3 <- deliberate(100)
 agents3c <- agents
+argspace3c <- argspace
+
+plot(density(agents1$dprop))
+plot(density(agents1c$dprop))
+
+plot(density(agents2$dprop))
+plot(density(agents2c$dprop))
+
+plot(density(agents3$dprop))
+plot(density(agents3c$dprop))
+
+plot(density(agents1$dqual))
+plot(density(agents1c$dqual))
+
+plot(density(agents2$dqual))
+plot(density(agents2c$dqual))
+
+plot(density(agents3$dqual))
+plot(density(agents3c$dqual))
 
 plotDelib(title = "Initial Deliberative Space (10% Leaders)", dat = agents1, view = "p.repsize")
 plotDelib(title = "Deliberative Space after 100 Rounds (10% Leaders)", dat = agents1c, view = "p.repsize")
@@ -59,7 +80,7 @@ plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders/High Prop+Po
 # Position Confidence
 for(i in 1:length(run3$mean.pconf)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,100), ylim=c(1,3), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Position Confidence")
+    plot(-100, -100, xlim=c(1,100), ylim=c(1,10), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Position Confidence")
   }else{
     segments(i-1, run1$mean.pconf[i-1], i, run1$mean.pconf[i], col = "blue", lwd=2)
     segments(i-1, run2$mean.pconf[i-1], i, run2$mean.pconf[i], col = "red", lwd=2)
@@ -81,7 +102,7 @@ for(i in 1:length(run3$pct.for)){
 # Mean Deliberative Quality
 for(i in 1:length(run3$pct.for)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,100), ylim=c(.4,.6), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean Deliberative Quality")
+    plot(-100, -100, xlim=c(1,100), ylim=c(.4,1), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean Deliberative Quality")
   }else{
     segments(i-1, run1$mean.dqual[i-1], i, run1$mean.dqual[i], col = "blue", lwd=2)
     segments(i-1, run2$mean.dqual[i-1], i, run2$mean.dqual[i], col = "red", lwd=2)
@@ -104,7 +125,7 @@ legend(x = 60, y = .44, legend = c("10% Leaders","20% Leaders","30% Leaders"), f
 # Mean For-Repertoire Size
 for(i in 1:length(run3$pct.for)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,100), ylim=c(3,5), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean For-Repertoire Size")
+    plot(-100, -100, xlim=c(1,100), ylim=c(3,10), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean For-Repertoire Size")
   }else{
     segments(i-1, run1$mean.prepsize[i-1], i, run1$mean.prepsize[i], col = "blue", lwd=2)
     segments(i-1, run2$mean.prepsize[i-1], i, run2$mean.prepsize[i], col = "red", lwd=2)
@@ -115,7 +136,7 @@ for(i in 1:length(run3$pct.for)){
 # Mean Against-Repertoire Size
 for(i in 1:length(run3$pct.for)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,100), ylim=c(1,2), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean Against-Repertoire Size")
+    plot(-100, -100, xlim=c(1,100), ylim=c(1,3), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean Against-Repertoire Size")
   }else{
     segments(i-1, run1$mean.orepsize[i-1], i, run1$mean.orepsize[i], col = "blue", lwd=2)
     segments(i-1, run2$mean.orepsize[i-1], i, run2$mean.orepsize[i], col = "red", lwd=2)
@@ -144,7 +165,3 @@ for(i in 1:length(run3$pct.for)){
     segments(i-1, run3$flips[i-1], i, run3$flips[i], col = "green", lwd=2)
   }
 }
-
-# NEXT:
-# Number of times agent makes and encounters each argument (add columns to argspace)
-
