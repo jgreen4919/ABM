@@ -91,7 +91,7 @@ for(i in 1:length(run3$mean.pconf)){
 # Percent in favor
 for(i in 1:length(run3$pct.for)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,100), ylim=c(.45, .55), ylab="Percent", xlab="Iteration", type="n", cex.axis=0.8, main = "Percent in Favor")
+    plot(-100, -100, xlim=c(1,100), ylim=c(.4, .55), ylab="Percent", xlab="Iteration", type="n", cex.axis=0.8, main = "Percent in Favor")
   }else{
     segments(i-1, run1$pct.for[i-1], i, run1$pct.for[i], col = "blue", lwd=2)
     segments(i-1, run2$pct.for[i-1], i, run2$pct.for[i], col = "red", lwd=2)
@@ -102,7 +102,7 @@ for(i in 1:length(run3$pct.for)){
 # Mean Deliberative Quality
 for(i in 1:length(run3$pct.for)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,100), ylim=c(.4,1), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean Deliberative Quality")
+    plot(-100, -100, xlim=c(1,100), ylim=c(.4,.7), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Mean Deliberative Quality")
   }else{
     segments(i-1, run1$mean.dqual[i-1], i, run1$mean.dqual[i], col = "blue", lwd=2)
     segments(i-1, run2$mean.dqual[i-1], i, run2$mean.dqual[i], col = "red", lwd=2)
