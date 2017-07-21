@@ -111,10 +111,10 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
   # Give each agent an initial confidence in their position
   # p.conf = difference in receptiveness to arguments in for-repertoire versus against repertoire over sum of receptiveness to arguments in both repertoires
   agents$p.conf <- sapply(1:nrow(agents), function(x){
-    sum(argspace[[x]][,3][argspace[[x]]$position == agents$position[x]][agents$p.rep[x][[1]]]) -
-      sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]]) /
-      sum(argspace[[x]][,3][argspace[[x]]$position == agents$position[x]][agents$p.rep[x][[1]]]) +
-      sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]])
+    (sum(argspace[[x]][,3][argspace[[x]]$position == agents$position[x]][agents$p.rep[x][[1]]]) -
+      sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]])) /
+      (sum(argspace[[x]][,3][argspace[[x]]$position == agents$position[x]][agents$p.rep[x][[1]]]) +
+      sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]]))
   })
   returns <- list(agents, argspace)
   return(returns)
@@ -480,10 +480,10 @@ deliberate <- function(iterations){
     # When loop for this round of deliberation finishes:
     # Update position confidences
     agents$p.conf <<- sapply(1:nrow(agents), function(x){
-      sum(argspace[[x]][,3][argspace[[x]]$position == agents$position[x]][agents$p.rep[x][[1]]]) -
-        sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]]) /
-        sum(argspace[[x]][,3][argspace[[x]]$position == agents$position[x]][agents$p.rep[x][[1]]]) +
-        sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]])
+      (sum(argspace[[x]][,3][argspace[[x]]$position == agents$position[x]][agents$p.rep[x][[1]]]) -
+        sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]])) /
+        (sum(argspace[[x]][,3][argspace[[x]]$position == agents$position[x]][agents$p.rep[x][[1]]]) +
+        sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]]))
     })
     
     # If position confidence falls below zero, flip positions

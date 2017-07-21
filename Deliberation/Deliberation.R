@@ -27,8 +27,21 @@ run3 <- deliberate(100)
 agents3c <- agents
 argspace3c <- argspace
 
+init4 <- do.delibspace(olead.dens = 0)
+agents <- init4[[1]]
+agents4 <- agents
+argspace <- init4[[2]]
+argspace4 <- argspace
+run4 <- deliberate(100)
+agents4c <- agents
+argspace4c <- argspace
+
+
 plot(density(agents1$dprop))
 plot(density(agents1c$dprop))
+
+plot(density(agents1$p.conf))
+plot(density(agents1c$p.conf))
 
 plot(density(agents2$dprop))
 plot(density(agents2c$dprop))
