@@ -2,16 +2,16 @@
 
 # Function to initialize the deliberative space. 
 
-# Takes dimension, opinion leader density, polarization level, baseline and leader deliberation propensity and deliberative skill,
-# baseline repertoire size, number of arguments per position, and positions
+# Takes dimension, opinion leader density, baseline polarization level, baseline and leader deliberation propensity and deliberative skill,
+  # baseline repertoire size, number of arguments per position, and positions
 # Creates a list of argumentative spaces for each agent, with latent receptivity to each reason for and against
 # Agents are more receptive to arguments for their position
 # Agents are assigned deliberative propensity and quality (opinion leaders are more likely to want to deliberate and have higher deliberative skill)
 # Agents are assigned argument repertoires for and against their position, sampled from their deliberative space
 # Opinion leaders have larger for- and against-repertoires
 # Agents' confidence in their position is:
-# sum of receptivity to the arguments in their for-repertoire, 
-# minus sum of receptivity to arguments in their against-repertoire
+  # difference in sums of receptivities to the arguments in their for- and against-repertoires, 
+  # over the sum of sums of receptivities to arguments in their for- and against-repertoires
 
 do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
                           base.dprop = .3, lead.dprop = .7, 
@@ -121,7 +121,7 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
 }
 
 # Function to plot the deliberative space
-# Plots different round, depending on dat, and different aspect of deliberative space, depending on view
+# Plots different round depending on dat and different aspect of deliberative space depending on view
 plotDelib <- function(title = "Deliberative Space", dat = agents, view = "position"){
   require(data.table)
   require(ggplot2)
@@ -211,7 +211,8 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
 # Function to govern interaction rules between agents
 
 # In each round, agents choose whether to deliberate with probability dprop
-# Agents match with partner in their Moore neighborhood who also wants to deliberate
+# Agents match with partner who also wants to deliberate
+  # If vision rule is local, partner is in Moore neighborhood; if vision rule is global, partner is from anywhere
 # Each agent makes an argument, represented by the combination of their position and one reason sampled from their repertoire
 # Their argument's force is determined by their deliberative quality and their partner's receptivity to their stated reason
 # If the agents agree:
@@ -229,6 +230,11 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
     # The listener's receptivity to the reason given decreases, and their receptivity to the reason they gave increases
 # At the end of each round, everyone updates their position confidence
 # Agents switch their position if position confidence falls below zero
+# Function tracks:
+  # proportion in favor after each round; 
+  # population means of deliberative quality, deliberative propensity, for-repertoire size, against-repertoire size, and position confidence;
+  # number of agents deliberating in each round
+  # number of agents who changed position in each round
 
 deliberate <- function(iterations, interaction.rule = "local"){
   require(data.table)
