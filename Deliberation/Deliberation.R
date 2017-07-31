@@ -1,22 +1,22 @@
 source("~/Desktop/ABM/Deliberation/delib_functions.R")
 
 initl <- do.delibspace()
-agentsl <- init[[1]]
-agents1l <- agents
-argspacel <- init[[2]]
-argspace1l <- argspace
+agentsl <- initl[[1]]
+agents1l <- agentsl
+argspacel <- initl[[2]]
+argspace1l <- argspacel
 run1l <- deliberate(100, interaction.rule = "local")
-agents1l <- agents
-argspace1l <- argspace
+agents1lc <- agents
+argspace1lc <- argspace
 
 initg <- do.delibspace()
-agentsg <- init[[1]]
-agents1g <- agents
-argspaceg <- init[[2]]
-argspace1g <- argspace
+agentsg <- initg[[1]]
+agents1g <- agentsg
+argspaceg <- initg[[2]]
+argspace1g <- argspaceg
 run1g <- deliberate(100, interaction.rule = "global")
-agents1g <- agents
-argspace1g <- argspace
+agents1gc <- agents
+argspace1gc <- argspace
 
 init2 <- do.delibspace(olead.dens = .2)
 agents <- init2[[1]]
@@ -46,11 +46,20 @@ agents4c <- agents
 argspace4c <- argspace
 
 
-plot(density(agents1$dprop))
-plot(density(agents1c$dprop))
+plot(density(agents1l$dprop))
+plot(density(agents1lc$dprop))
+plot(density(agents1g$dprop))
+plot(density(agents1gc$dprop))
 
-plot(density(agents1$p.conf))
-plot(density(agents1c$p.conf))
+plot(density(agents1l$p.conf))
+plot(density(agents1lc$p.conf))
+plot(density(agents1g$p.conf))
+plot(density(agents1gc$p.conf))
+
+plot(density(agents1l$dqual))
+plot(density(agents1lc$dqual))
+plot(density(agents1g$dqual))
+plot(density(agents1gc$dqual))
 
 plot(density(agents2$dprop))
 plot(density(agents2c$dprop))
@@ -67,8 +76,10 @@ plot(density(agents2c$dqual))
 plot(density(agents3$dqual))
 plot(density(agents3c$dqual))
 
-plotDelib(title = "Initial Deliberative Space (10% Leaders)", dat = agents1, view = "p.repsize")
-plotDelib(title = "Deliberative Space after 100 Rounds (10% Leaders)", dat = agents1c, view = "p.repsize")
+plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1l, view = "p.repsize")
+plotDelib(title = "Deliberative Space after 100 Rounds (Local Vision Rule)", dat = agents1lc, view = "p.repsize")
+plotDelib(title = "Initial Deliberative Space (Global Vision Rule)", dat = agents1g, view = "p.repsize")
+plotDelib(title = "Deliberative Space after 100 Rounds (Global Vision Rule)", dat = agents1gc, view = "p.repsize")
 
 plotDelib(title = "Initial Deliberative Space (20% Leaders)", dat = agents2, view = "p.repsize")
 plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders)", dat = agents2c, view = "p.repsize")
@@ -76,8 +87,10 @@ plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders)", dat = age
 plotDelib(title = "Initial Deliberative Space (20% Leaders/High Prop+Polar)", dat = agents3, view = "p.repsize")
 plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders/High Prop+Polar)", dat = agents3c, view = "p.repsize")
 
-plotDelib(title = "Initial Deliberative Space (10% Leaders)", dat = agents1, view = "o.repsize")
-plotDelib(title = "Deliberative Space after 100 Rounds (10% Leaders)", dat = agents1c, view = "o.repsize")
+plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1l, view = "o.repsize")
+plotDelib(title = "Deliberative Space after 100 Rounds (Local Vision Rule)", dat = agents1lc, view = "o.repsize")
+plotDelib(title = "Initial Deliberative Space (Global Vision Rule)", dat = agents1g, view = "o.repsize")
+plotDelib(title = "Deliberative Space after 100 Rounds (Global Vision Rule)", dat = agents1gc, view = "o.repsize")
 
 plotDelib(title = "Initial Deliberative Space (20% Leaders)", dat = agents2, view = "o.repsize")
 plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders)", dat = agents2c, view = "o.repsize")
@@ -85,15 +98,21 @@ plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders)", dat = age
 plotDelib(title = "Initial Deliberative Space (20% Leaders/High Prop+Polar)", dat = agents3, view = "o.repsize")
 plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders/High Prop+Polar)", dat = agents3c, view = "o.repsize")
 
-plotDelib(title = "Initial Deliberative Space (10% Leaders)", dat = agents1, view = "dqual")
-plotDelib(title = "Deliberative Space after 100 Rounds (10% Leaders)", dat = agents1c, view = "dqual")
+plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1l, view = "dqual")
+plotDelib(title = "Deliberative Space after 100 Rounds (Local Vision Rule)", dat = agents1lc, view = "dqual")
+plotDelib(title = "Initial Deliberative Space (Global Vision Rule)", dat = agents1g, view = "dqual")
+plotDelib(title = "Deliberative Space after 100 Rounds (Global Vision Rule)", dat = agents1gc, view = "dqual")
+
 plotDelib(title = "Initial Deliberative Space (20% Leaders)", dat = agents2, view = "dqual")
 plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders)", dat = agents2c, view = "dqual")
 plotDelib(title = "Initial Deliberative Space (20% Leaders/High Prop+Polar)", dat = agents3, view = "dqual")
 plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders/High Prop+Polar)", dat = agents3c, view = "dqual")
 
-plotDelib(title = "Initial Deliberative Space (10% Leaders)", dat = agents1, view = "dprop")
-plotDelib(title = "Deliberative Space after 100 Rounds (10% Leaders)", dat = agents1c, view = "dprop")
+plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1l, view = "dprop")
+plotDelib(title = "Deliberative Space after 100 Rounds (Local Vision Rule)", dat = agents1lc, view = "dprop")
+plotDelib(title = "Initial Deliberative Space (Global Vision Rule)", dat = agents1g, view = "dprop")
+plotDelib(title = "Deliberative Space after 100 Rounds (Global Vision Rule)", dat = agents1gc, view = "dprop")
+
 plotDelib(title = "Initial Deliberative Space (20% Leaders)", dat = agents2, view = "dprop")
 plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders)", dat = agents2c, view = "dprop")
 plotDelib(title = "Initial Deliberative Space (20% Leaders/High Prop+Polar)", dat = agents3, view = "dprop")
