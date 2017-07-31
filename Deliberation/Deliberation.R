@@ -5,7 +5,7 @@ agents <- init[[1]]
 agents1 <- agents
 argspace <- init[[2]]
 argspace1 <- argspace
-run1 <- deliberate(100)
+run1 <- deliberate(10, interaction.rule = "global")
 agents1c <- agents
 argspace1c <- argspace
 
