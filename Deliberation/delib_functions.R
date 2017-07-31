@@ -230,7 +230,7 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
 # At the end of each round, everyone updates their position confidence
 # Agents switch their position if position confidence falls below zero
 
-deliberate <- function(iterations){
+deliberate <- function(iterations, interaction.rule = "local"){
   require(data.table)
   pct.for <- sum(agents$position == "for")/nrow(agents)
   mean.dqual <- mean(agents$dqual)
@@ -250,11 +250,12 @@ deliberate <- function(iterations){
     ndelib <- c(ndelib, sum(agents$cdelib))
     
     # Subfunction for agents to pick a deliberative partner (wrapped world)
-    pickpartner <- function(x_value, y_value, dimension){
+    pickpartner <- function(x_value, y_value, dimension, interaction){
       cur_ag <- agents[x == x_value & y == y_value, agid] # Store current agent ID
       if(cur_ag %in% agents$dpart){
         return(agents[agents$dpart == cur_ag, agid]) # If agent has already been claimed as a deliberative partner, match them with the agent who claimed them
       }else{
+        if(interaction == "local"){
         x_vals <- c(x_value+1, x_value, x_value-1) # Look left and right
         x_vals <- sapply(x_vals, function(x){
           if(x < 1){x = dimension} 
@@ -279,13 +280,28 @@ deliberate <- function(iterations){
         }else{
           return(sample(delib.ids, 1)) # Return one agent from Moore neighborhood who isn't already partnered up
         }
+        }
+        if(interaction == "global"){
+          delib.ids <- agents[cdelib == TRUE & agid != cur_ag, agid] # Deliberating agents in the global space
+          delib.ids <- delib.ids[! delib.ids %in% agents$dpart] # Subtract agents who are already in list of partners
+          delib.ids <- delib.ids[! delib.ids %in% agents$agid[!is.na(agents$dpart)]] # Subtract agents who already have partners
+          if(length(delib.ids) == 0){
+            return(NA)
+          }
+          if(length(delib.ids) == 1){
+            return(delib.ids)
+          }else{
+            return(sample(delib.ids, 1)) # Return one agent who isn't already partnered up
+          }
+        }
       }
     }
     agents$dpart <<- NA
     for(p in 1:nrow(agents)){
       if(agents$cdelib[p] == FALSE) {next}
       # Agents who want to deliberate partner up
-      agents$dpart[p] <<- pickpartner(x_value = agents[agid == p, x], y_value = agents[agid == p, y], dimension = max(agents$x))
+      agents$dpart[p] <<- pickpartner(x_value = agents[agid == p, x], y_value = agents[agid == p, y], 
+                                      dimension = max(agents$x), interaction = interaction.rule)
     } 
     
     delibs <- agents$agid[!is.na(agents$dpart)] # Vector of agents who are deliberating this round
