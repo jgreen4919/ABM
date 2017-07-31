@@ -1,13 +1,22 @@
 source("~/Desktop/ABM/Deliberation/delib_functions.R")
 
-init <- do.delibspace()
-agents <- init[[1]]
-agents1 <- agents
-argspace <- init[[2]]
-argspace1 <- argspace
-run1 <- deliberate(10, interaction.rule = "global")
-agents1c <- agents
-argspace1c <- argspace
+initl <- do.delibspace()
+agentsl <- init[[1]]
+agents1l <- agents
+argspacel <- init[[2]]
+argspace1l <- argspace
+run1l <- deliberate(100, interaction.rule = "local")
+agents1l <- agents
+argspace1l <- argspace
+
+initg <- do.delibspace()
+agentsg <- init[[1]]
+agents1g <- agents
+argspaceg <- init[[2]]
+argspace1g <- argspace
+run1g <- deliberate(100, interaction.rule = "global")
+agents1g <- agents
+argspace1g <- argspace
 
 init2 <- do.delibspace(olead.dens = .2)
 agents <- init2[[1]]
