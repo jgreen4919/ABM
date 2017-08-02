@@ -15,8 +15,11 @@
 
 do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
                           base.dprop = .3, lead.dprop = .7, 
+                          base.propvar = .2, lead.propvar = .1,
                           base.dqual = .5, lead.dqual = .8,
-                          baserep = 3, args = 10, positions = c("for","against")){
+                          base.qualvar = .3, lead.qualvar = .1,
+                          baserep = 3, args = 10, pct.for = .5,
+                          positions = c("for","against")){
   if((baserep*2) > args){
     return("Error: baseline argument repertoire too large")
   }
@@ -27,7 +30,7 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
   agents <- data.table(agid = 1:(dimension*dimension),
                        x = rep(1:dimension, dimension),
                        y = rep(1:dimension, each = dimension),
-                       position = sample(positions, dimension*dimension, replace = T),
+                       position = rbinom(dimension*dimension, 1, pct.for),
                        olead = rep(NA, dimension*dimension),
                        dqual = rep(NA, dimension*dimension),
                        dprop = rep(NA, dimension*dimension),
@@ -39,7 +42,7 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
                        cdelib = rep(NA, dimension*dimension),
                        dpart = rep(NA, dimension*dimension)
   )
-  agents$position <- as.factor(agents$position)
+  agents$position <- as.factor(ifelse(agents$position == 1, "for", "against"))
   
   # Each agent is assigned an argumentative space, indicating their latent receptiveness to each reason for each position
   argspace <- list(NULL)
@@ -49,9 +52,9 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
       reason = rep(1:args, length(positions)),
       if(agents$position[x] == "for"){
         # Agents are more receptive to reasons for their position and less receptive to reasons against their position
-        lreceptive = c(rtnorm(10, mean = (.5 + polarization), sd = .2, lower = 0, upper = 1), rtnorm(10, mean = .3, sd = .2, lower = 0, upper = 1))
+        lreceptive = c(rtnorm(10, mean = (.5 + polarization), sd = .2, lower = 0, upper = 1), rtnorm(10, mean = (.5 - polarization), sd = .2, lower = 0, upper = 1))
       }else{
-        lreceptive = c(rtnorm(10, mean = (.5 - polarization), sd = .2, lower = 0, upper = 1), rtnorm(10, mean = .7, sd = .2, lower = 0, upper = 1))
+        lreceptive = c(rtnorm(10, mean = (.5 - polarization), sd = .2, lower = 0, upper = 1), rtnorm(10, mean = (.5 + polarization), sd = .2, lower = 0, upper = 1))
       }
     )
     argspace[[x]][,voiced := rep(0, 2*args)]
@@ -67,18 +70,18 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
   # Assign each agent a deliberative quality
   agents$dqual <- sapply(1:nrow(agents), function(x){
     if(agents$olead[x] == TRUE){
-      agents$dqual[x] <- rtnorm(1, mean = lead.dqual, sd = .1, lower = .5, upper = 1) # Opinion leaders are more skilled deliberators on average by default, but not by definition
+      agents$dqual[x] <- rtnorm(1, mean = lead.dqual, sd = lead.qualvar, lower = .5, upper = 1) # Opinion leaders are more skilled deliberators on average by default, but not by definition
     }else{
-      agents$dqual[x] <- rtnorm(1, mean = base.dqual, sd = .3, lower = 0, upper = .8)
+      agents$dqual[x] <- rtnorm(1, mean = base.dqual, sd = base.qualvar, lower = 0, upper = .8)
     }
   })
   
   # Assign each agent a propensity to deliberate
   agents$dprop <- sapply(1:nrow(agents), function(x){
     if(agents$olead[x] == TRUE){
-      agents$dprop[x] <- rtnorm(1, mean = lead.dprop, sd = .1, lower = .5, upper = 1) # Opinion leaders are more likely to deliberate (unless otherwise specified, but see ranges)
+      agents$dprop[x] <- rtnorm(1, mean = lead.dprop, sd = lead.propvar, lower = .5, upper = 1) # Opinion leaders are more likely to deliberate (unless otherwise specified, but see ranges)
     }else{
-      agents$dprop[x] <- rtnorm(1, mean = base.dprop, sd = .2, lower = 0, upper = 1)
+      agents$dprop[x] <- rtnorm(1, mean = base.dprop, sd = base.propvar, lower = 0, upper = 1)
     }
   })
   
@@ -246,8 +249,12 @@ deliberate <- function(iterations, interaction.rule = "local"){
   mean.pconf <- mean(agents$p.conf)
   ndelib <- NA
   flips <- NA
+  tension <- NA
+  
   for(i in 1:iterations){
     nflip <- 0
+    nagree <- 0
+    ndisagree <- 0
     
     agents$cdelib <<- sapply(1:nrow(agents), function(x){
       agents$dprop[x] > runif(1) # Each agent chooses whether to deliberate in this round
@@ -349,6 +356,7 @@ deliberate <- function(iterations, interaction.rule = "local"){
       
       # If the agents agree:
       if(a.pos == p.pos){
+        nagree <- nagree + 1
         # If an argument is powerful (note: lower threshold for powerful arguments if agents agree):
         if(a.force > (agents[agid == p, dqual]/2)){
           # The speaker's propensity to deliberate and receptivity to the reason given increase by 10%, capped at 1
@@ -395,6 +403,7 @@ deliberate <- function(iterations, interaction.rule = "local"){
       }
       # If the agents disagree:
       if(a.pos != p.pos){
+        ndisagree <- ndisagree + 1
         # If an argument is powerful:
         if(a.force > (agents[agid == p, dqual])){
           # The speaker's propensity to deliberate, deliberative quality, and receptivity to the reason given increase by 10%, capped at 1
@@ -539,8 +548,9 @@ deliberate <- function(iterations, interaction.rule = "local"){
     mean.orepsize <- c(mean.orepsize, mean(agents$o.repsize))
     mean.pconf <- c(mean.pconf, mean(agents$p.conf))
     flips <- c(flips, nflip)
+    tension <- c(tension, (ndisagree / (nagree + ndisagree)))
   }
-  returns <- list(pct.for, ndelib, flips, mean.dqual, mean.dprop, mean.prepsize, mean.orepsize, mean.pconf)
-  names(returns) <- c("pct.for","num.delib","flips", "mean.dqual","mean.dprop","mean.prepsize","mean.orepsize","mean.pconf")
+  returns <- list(pct.for, ndelib, tension, flips, mean.dqual, mean.dprop, mean.prepsize, mean.orepsize, mean.pconf)
+  names(returns) <- c("pct.for","num.delib","tension","flips","mean.dqual","mean.dprop","mean.prepsize","mean.orepsize","mean.pconf")
   return(returns)
 }
