@@ -45,21 +45,26 @@ run4 <- deliberate(100)
 agents4c <- agents
 argspace4c <- argspace
 
-
-plot(density(agents1l$dprop))
-plot(density(agents1lc$dprop))
-plot(density(agents1g$dprop))
+plot(density(agents1l$dprop), main = "Initial Propensity to Deliberate (Local Vision Rule)", xlab = "Value", ylab = "Density")
+plot(density(agents1lc$dprop), main = "Propensity to Deliberate after 100 Rounds (Local Vision Rule)", xlab = "Value", ylab = "Density")
 plot(density(agents1gc$dprop))
 
-plot(density(agents1l$p.conf))
-plot(density(agents1lc$p.conf))
-plot(density(agents1g$p.conf))
+plot(density(agents1l$dqual), main = "Initial Deliberative Quality (Local Vision Rule)", xlab = "Value", ylab = "Density")
+plot(density(agents1lc$dqual), main = "Deliberative Quality after 100 Rounds (Local Vision Rule)", xlab = "Value", ylab = "Density")
+plot(density(agents1gc$dqual))
+
+plot(density(agents1l$p.conf), main = "Initial Position Confidence (Local Vision Rule)", xlab = "Value", ylab = "Density")
+plot(density(agents1lc$p.conf), main = "Position Confidence after 100 Rounds (Local Vision Rule)", xlab = "Value", ylab = "Density")
 plot(density(agents1gc$p.conf))
 
-plot(density(agents1l$dqual))
-plot(density(agents1lc$dqual))
-plot(density(agents1g$dqual))
-plot(density(agents1gc$dqual))
+plot(density(agents1l$o.repsize), main = "Initial Against-Repertoire Size (Local Vision Rule)", xlab = "Arguments in Against-Repertoire", ylab = "Density")
+plot(density(agents1lc$o.repsize), main = "Against-Repertoire Size after 100 Rounds (Local Vision Rule)", xlab = "Arguments in Against-Repertoire", ylab = "Density")
+plot(density(agents1l$p.repsize), main = "Initial For-Repertoire Size (Local Vision Rule)", xlab = "Arguments in For-Repertoire", ylab = "Density")
+plot(density(agents1lc$p.repsize), main = "For-Repertoire Size after 100 Rounds (Local Vision Rule)", xlab = "Arguments in For-Repertoire", ylab = "Density")
+
+hist(agents1lc$o.repsize)
+hist(agents1gc$o.repsize)
+
 
 plot(density(agents2$dprop))
 plot(density(agents2c$dprop))
@@ -80,6 +85,16 @@ plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents
 plotDelib(title = "Deliberative Space after 100 Rounds (Local Vision Rule)", dat = agents1lc, view = "p.repsize")
 plotDelib(title = "Initial Deliberative Space (Global Vision Rule)", dat = agents1g, view = "p.repsize")
 plotDelib(title = "Deliberative Space after 100 Rounds (Global Vision Rule)", dat = agents1gc, view = "p.repsize")
+
+plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1l, view = "position")
+plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1lc, view = "position")
+table(agents1l$position)
+table(agents1lc$position)
+plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1g, view = "position")
+plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1gc, view = "position")
+table(agents1g$position)
+table(agents1gc$position)
+
 
 plotDelib(title = "Initial Deliberative Space (20% Leaders)", dat = agents2, view = "p.repsize")
 plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders)", dat = agents2c, view = "p.repsize")
@@ -119,13 +134,12 @@ plotDelib(title = "Initial Deliberative Space (20% Leaders/High Prop+Polar)", da
 plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders/High Prop+Polar)", dat = agents3c, view = "dprop")
 
 # Position Confidence
-for(i in 1:length(run3$mean.pconf)){
+for(i in 1:length(run1l$mean.pconf)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,100), ylim=c(1,10), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Position Confidence")
+    plot(-100, -100, xlim=c(1,100), ylim=c(0,1), ylab="Value", xlab="Iteration", type="n", cex.axis=0.8, main = "Position Confidence")
   }else{
-    segments(i-1, run1$mean.pconf[i-1], i, run1$mean.pconf[i], col = "blue", lwd=2)
-    segments(i-1, run2$mean.pconf[i-1], i, run2$mean.pconf[i], col = "red", lwd=2)
-    segments(i-1, run3$mean.pconf[i-1], i, run3$mean.pconf[i], col = "green", lwd=2)
+    segments(i-1, run1l$mean.pconf[i-1], i, run1l$mean.pconf[i], col = "blue", lwd=2)
+    segments(i-1, run1g$mean.pconf[i-1], i, run1g$mean.pconf[i], col = "red", lwd=2)
   }
 }
 
