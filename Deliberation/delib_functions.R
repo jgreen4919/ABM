@@ -554,3 +554,5 @@ deliberate <- function(iterations, interaction.rule = "local"){
   names(returns) <- c("pct.for","num.delib","tension","flips","mean.dqual","mean.dprop","mean.prepsize","mean.orepsize","mean.pconf")
   return(returns)
 }
+
+argspace[[1]]
