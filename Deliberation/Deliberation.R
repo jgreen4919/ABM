@@ -211,6 +211,10 @@ for(i in 1:length(run1l$mean.pconf)){
     segments(i-1, run2g$mean.pconf[i-1], i, run2g$mean.pconf[i], col = "blue", lwd=2)
     segments(i-1, run3l$mean.pconf[i-1], i, run3l$mean.pconf[i], col = "green", lwd=2)
     segments(i-1, run3g$mean.pconf[i-1], i, run3g$mean.pconf[i], col = "darkgreen", lwd=2)
+    segments(i-1, run4l$mean.pconf[i-1], i, run4l$mean.pconf[i], col = "grey", lwd=2)
+    segments(i-1, run4g$mean.pconf[i-1], i, run4g$mean.pconf[i], col = "black", lwd=2)
+    segments(i-1, run5l$mean.pconf[i-1], i, run5l$mean.pconf[i], col = "tan", lwd=2)
+    segments(i-1, run5g$mean.pconf[i-1], i, run5g$mean.pconf[i], col = "brown", lwd=2)
   }
 }
 legend(x = 0, y = .905, 
@@ -222,7 +226,7 @@ legend(x = 0, y = .905,
 # Percent in favor
 for(i in 1:length(run1l$pct.for)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,100), ylim=c(.4, .55), ylab="Percent", xlab="Iteration", type="n", cex.axis=0.8, main = "Percent in Favor")
+    plot(-100, -100, xlim=c(1,100), ylim=c(.45, .8), ylab="Percent", xlab="Iteration", type="n", cex.axis=0.8, main = "Percent in Favor")
   }else{
     segments(i-1, run1l$pct.for[i-1], i, run1l$pct.for[i], col = "pink", lwd=2)
     segments(i-1, run1g$pct.for[i-1], i, run1g$pct.for[i], col = "red", lwd=2)
@@ -230,6 +234,10 @@ for(i in 1:length(run1l$pct.for)){
     segments(i-1, run2g$pct.for[i-1], i, run2g$pct.for[i], col = "blue", lwd=2)
     segments(i-1, run3l$pct.for[i-1], i, run3l$pct.for[i], col = "green", lwd=2)
     segments(i-1, run3g$pct.for[i-1], i, run3g$pct.for[i], col = "darkgreen", lwd=2)
+    segments(i-1, run4l$pct.for[i-1], i, run4l$pct.for[i], col = "grey", lwd=2)
+    segments(i-1, run4g$pct.for[i-1], i, run4g$pct.for[i], col = "black", lwd=2)
+    segments(i-1, run5l$pct.for[i-1], i, run5l$pct.for[i], col = "tan", lwd=2)
+    segments(i-1, run5g$pct.for[i-1], i, run5g$pct.for[i], col = "brown", lwd=2)
   }
 }
 
@@ -244,6 +252,10 @@ for(i in 1:length(run1l$mean.dqual)){
     segments(i-1, run2g$mean.dqual[i-1], i, run2g$mean.dqual[i], col = "blue", lwd=2)
     segments(i-1, run3l$mean.dqual[i-1], i, run3l$mean.dqual[i], col = "green", lwd=2)
     segments(i-1, run3g$mean.dqual[i-1], i, run3g$mean.dqual[i], col = "darkgreen", lwd=2)
+    segments(i-1, run4l$mean.dqual[i-1], i, run4l$mean.dqual[i], col = "grey", lwd=2)
+    segments(i-1, run4g$mean.dqual[i-1], i, run4g$mean.dqual[i], col = "black", lwd=2)
+    segments(i-1, run5l$mean.dqual[i-1], i, run5l$mean.dqual[i], col = "tan", lwd=2)
+    segments(i-1, run5g$mean.dqual[i-1], i, run5g$mean.dqual[i], col = "brown", lwd=2)
   }
 }
 
@@ -258,6 +270,10 @@ for(i in 1:length(run1l$mean.dprop)){
     segments(i-1, run2g$mean.dprop[i-1], i, run2g$mean.dprop[i], col = "blue", lwd=2)
     segments(i-1, run3l$mean.dprop[i-1], i, run3l$mean.dprop[i], col = "green", lwd=2)
     segments(i-1, run3g$mean.dprop[i-1], i, run3g$mean.dprop[i], col = "darkgreen", lwd=2)
+    segments(i-1, run4l$mean.dprop[i-1], i, run4l$mean.dprop[i], col = "grey", lwd=2)
+    segments(i-1, run4g$mean.dprop[i-1], i, run4g$mean.dprop[i], col = "black", lwd=2)
+    segments(i-1, run5l$mean.dprop[i-1], i, run5l$mean.dprop[i], col = "tan", lwd=2)
+    segments(i-1, run5g$mean.dprop[i-1], i, run5g$mean.dprop[i], col = "brown", lwd=2)
   }
 }
 legend(x = 0, y = .68, 
@@ -277,6 +293,10 @@ for(i in 1:length(run1l$mean.prepsize)){
     segments(i-1, run2g$mean.prepsize[i-1], i, run2g$mean.prepsize[i], col = "blue", lwd=2)
     segments(i-1, run3l$mean.prepsize[i-1], i, run3l$mean.prepsize[i], col = "green", lwd=2)
     segments(i-1, run3g$mean.prepsize[i-1], i, run3g$mean.prepsize[i], col = "darkgreen", lwd=2)
+    segments(i-1, run4l$mean.prepsize[i-1], i, run4l$mean.prepsize[i], col = "grey", lwd=2)
+    segments(i-1, run4g$mean.prepsize[i-1], i, run4g$mean.prepsize[i], col = "black", lwd=2)
+    segments(i-1, run5l$mean.prepsize[i-1], i, run5l$mean.prepsize[i], col = "tan", lwd=2)
+    segments(i-1, run5g$mean.prepsize[i-1], i, run5g$mean.prepsize[i], col = "brown", lwd=2)
   }
 }
 legend(x = 40, y = 4.5, 
@@ -296,6 +316,10 @@ for(i in 1:length(run1l$mean.orepsize)){
     segments(i-1, run2g$mean.orepsize[i-1], i, run2g$mean.orepsize[i], col = "blue", lwd=2)
     segments(i-1, run3l$mean.orepsize[i-1], i, run3l$mean.orepsize[i], col = "green", lwd=2)
     segments(i-1, run3g$mean.orepsize[i-1], i, run3g$mean.orepsize[i], col = "darkgreen", lwd=2)
+    segments(i-1, run4l$mean.orepsize[i-1], i, run4l$mean.orepsize[i], col = "grey", lwd=2)
+    segments(i-1, run4g$mean.orepsize[i-1], i, run4g$mean.orepsize[i], col = "black", lwd=2)
+    segments(i-1, run5l$mean.orepsize[i-1], i, run5l$mean.orepsize[i], col = "tan", lwd=2)
+    segments(i-1, run5g$mean.orepsize[i-1], i, run5g$mean.orepsize[i], col = "brown", lwd=2)
   }
 }
 
@@ -310,6 +334,10 @@ for(i in 1:length(run1l$num.delib)){
     segments(i-1, run2g$num.delib[i-1], i, run2g$num.delib[i], col = "blue", lwd=2)
     segments(i-1, run3l$num.delib[i-1], i, run3l$num.delib[i], col = "green", lwd=2)
     segments(i-1, run3g$num.delib[i-1], i, run3g$num.delib[i], col = "darkgreen", lwd=2)
+    segments(i-1, run4l$num.delib[i-1], i, run4l$num.delib[i], col = "grey", lwd=2)
+    segments(i-1, run4g$num.delib[i-1], i, run4g$num.delib[i], col = "black", lwd=2)
+    segments(i-1, run5l$num.delib[i-1], i, run5l$num.delib[i], col = "tan", lwd=2)
+    segments(i-1, run5g$num.delib[i-1], i, run5g$num.delib[i], col = "brown", lwd=2)
   }
 }
 
@@ -324,13 +352,17 @@ for(i in 1:length(run1l$flips)){
     segments(i-1, run2g$flips[i-1], i, run2g$flips[i], col = "blue", lwd=2)
     segments(i-1, run3l$flips[i-1], i, run3l$flips[i], col = "green", lwd=2)
     segments(i-1, run3g$flips[i-1], i, run3g$flips[i], col = "darkgreen", lwd=2)
+    segments(i-1, run4l$flips[i-1], i, run4l$flips[i], col = "grey", lwd=2)
+    segments(i-1, run4g$flips[i-1], i, run4g$flips[i], col = "black", lwd=2)
+    segments(i-1, run5l$flips[i-1], i, run5l$flips[i], col = "tan", lwd=2)
+    segments(i-1, run5g$flips[i-1], i, run5g$flips[i], col = "brown", lwd=2)
   }
 }
 
 # Tension each round
 for(i in 1:length(run1l$tension)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,100), ylim=c(.2,.8), ylab="Tension Level", xlab="Iteration", type="n", cex.axis=0.8, main = "Tension Level Each Round")
+    plot(-100, -100, xlim=c(1,100), ylim=c(0,.7), ylab="Tension Level", xlab="Iteration", type="n", cex.axis=0.8, main = "Tension Level Each Round")
   }else{
     segments(i-1, run1l$tension[i-1], i, run1l$tension[i], col = "pink", lwd=2)
     segments(i-1, run1g$tension[i-1], i, run1g$tension[i], col = "red", lwd=2)
@@ -338,6 +370,10 @@ for(i in 1:length(run1l$tension)){
     segments(i-1, run2g$tension[i-1], i, run2g$tension[i], col = "blue", lwd=2)
     segments(i-1, run3l$tension[i-1], i, run3l$tension[i], col = "green", lwd=2)
     segments(i-1, run3g$tension[i-1], i, run3g$tension[i], col = "darkgreen", lwd=2)
+    segments(i-1, run4l$tension[i-1], i, run4l$tension[i], col = "grey", lwd=2)
+    segments(i-1, run4g$tension[i-1], i, run4g$tension[i], col = "black", lwd=2)
+    segments(i-1, run5l$tension[i-1], i, run5l$tension[i], col = "tan", lwd=2)
+    segments(i-1, run5g$tension[i-1], i, run5g$tension[i], col = "brown", lwd=2)
   }
 }
 legend(x = 10, y = .2, 
@@ -347,6 +383,9 @@ legend(x = 10, y = .2,
 
 
 save(agents1l, agents1g, agents1lc, agents1gc, agents2l, agents2g, agents2lc, agents2gc, agents3l, agents3g, agents3lc, agents3gc,
+     agents4l, agents4g, agents4lc, agents4gc, agents5l, agents5g, agents5lc, agents5gc,
      argspace1l, argspace1g, argspace1lc, argspace1gc, argspace2l, argspace2g, argspace2lc, argspace2gc, 
-     argspace3l, argspace3g, argspace3lc, argspace3gc, initl, initg, init2l, init2g, init3l, init3g, 
-     run1l, run1g, run2l, run2g, run3l, run3g, file = "delib_runs.RData")
+     argspace3l, argspace3g, argspace3lc, argspace3gc, argspace4l, argspace4g, argspace4lc, argspace4gc,
+     argspace5l, argspace5g, argspace5lc, argspace5gc, initl, initg, init2l, init2g, init3l, init3g,
+     init4l, init4g, init5l, init5g, run1l, run1g, run2l, run2g, run3l, run3g, 
+     run4l, run4g, run5l, run5g, file = "delib_runs.RData")
