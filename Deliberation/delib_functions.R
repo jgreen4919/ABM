@@ -86,7 +86,7 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
   })
   
   # Give each agent an initial argument repertoire for their position and store number of arguments
-  agents$p.rep <- sapply(1:nrow(agents), function(x){
+  agents$p.rep <- lapply(1:nrow(agents), function(x){
     if(agents$olead[x] == TRUE){
       sample(argspace[[x]][argspace[[x]]$position == agents$position[x]]$reason, baserep*2) # Opinion leaders have twice as large for-repertoires
     }else{
@@ -99,7 +99,7 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
   })
   
   # Give each agent an initial argument repertoire against their position and store number of arguments
-  agents$o.rep <- sapply(1:nrow(agents), function(x){
+  agents$o.rep <- lapply(1:nrow(agents), function(x){
     if(agents$olead[x] == TRUE){
       sample(argspace[[x]][argspace[[x]]$position != agents$position[x]]$reason, baserep) # Opinion leaders have larger against-repertoires 
     }else{
@@ -115,9 +115,9 @@ do.delibspace <- function(dimension = 20, olead.dens = .1, polarization = .2,
   # p.conf = difference in receptiveness to arguments in for-repertoire versus against repertoire over sum of receptiveness to arguments in both repertoires
   agents$p.conf <- sapply(1:nrow(agents), function(x){
     (sum(argspace[[x]][,3][argspace[[x]]$position == agents$position[x]][agents$p.rep[x][[1]]]) -
-      sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]])) /
+       sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]])) /
       (sum(argspace[[x]][,3][argspace[[x]]$position == agents$position[x]][agents$p.rep[x][[1]]]) +
-      sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]]))
+         sum(argspace[[x]][,3][argspace[[x]]$position != agents$position[x]][agents$o.rep[x][[1]]]))
   })
   returns <- list(agents, argspace)
   return(returns)
@@ -554,5 +554,3 @@ deliberate <- function(iterations, interaction.rule = "local"){
   names(returns) <- c("pct.for","num.delib","tension","flips","mean.dqual","mean.dprop","mean.prepsize","mean.orepsize","mean.pconf")
   return(returns)
 }
-
-argspace[[1]]
