@@ -1,7 +1,8 @@
 # Deliberation Viz
 source("~/Desktop/ABM/Deliberation/delib_functions.R")
-setwd("~/Desktop/ABM/Deliberation/Viz")
+setwd("~/Desktop/ABM/Deliberation/")
 load("delib_runs.RData")
+setwd("~/Desktop/ABM/Deliberation/Viz")
 
 plotDelib(title = "Initial Deliberative Space (Default Run / Local Vision Rule)", dat = agents1l, view = "p.repsize")
 plotDelib(title = "Deliberative Space after 100 Rounds (Default Run / Local Vision Rule)", dat = agents1lc, view = "p.repsize")
@@ -70,7 +71,7 @@ legend(x = 20, y = .7,
 # Percent in favor
 for(i in 1:length(run1l_agg$pct.for)){
   if(i == 1){
-    plot(-100, -100, xlim=c(1,100), ylim=c(.45, .8), ylab="Percent", xlab="Iteration", type="n", cex.axis=0.8, main = "Percent in Favor")
+    plot(-100, -100, xlim=c(1,100), ylim=c(.45, .55), ylab="Percent", xlab="Iteration", type="n", cex.axis=0.8, main = "Percent in Favor: Balanced Runs")
   }else{
     segments(i-1, run1l_agg$pct.for[i-1], i, run1l_agg$pct.for[i], col = "pink", lwd=2)
     segments(i-1, run1g_agg$pct.for[i-1], i, run1g_agg$pct.for[i], col = "red", lwd=2)
@@ -80,10 +81,30 @@ for(i in 1:length(run1l_agg$pct.for)){
     segments(i-1, run3g_agg$pct.for[i-1], i, run3g_agg$pct.for[i], col = "darkgreen", lwd=2)
     segments(i-1, run4l_agg$pct.for[i-1], i, run4l_agg$pct.for[i], col = "grey", lwd=2)
     segments(i-1, run4g_agg$pct.for[i-1], i, run4g_agg$pct.for[i], col = "black", lwd=2)
+  }
+}
+legend(x = 20, y = .47, 
+       legend = c("Default Local","20% Leaders Local", "High Prop Local", 
+                  "0% Leaders Local",
+                  "Default Global","20% Leaders Global", "High Prop Global", 
+                  "0% Leaders Global"), 
+       fill = c("pink","lightblue","green","grey",
+                "red","blue","darkgreen","black"),
+       ncol = 2)
+
+
+for(i in 1:length(run1l_agg$pct.for)){
+  if(i == 1){
+    plot(-100, -100, xlim=c(1,100), ylim=c(.65,.75), ylab="Percent", xlab="Iteration", type="n", cex.axis=0.8, main = "Percent in Favor: Unbalanced Runs")
+  }else{
     segments(i-1, run5l_agg$pct.for[i-1], i, run5l_agg$pct.for[i], col = "tan", lwd=2)
     segments(i-1, run5g_agg$pct.for[i-1], i, run5g_agg$pct.for[i], col = "brown", lwd=2)
   }
 }
+legend(x = 20, y = .68, 
+       legend = c("Local Vision Rule","Global Vision Rule"), 
+       fill = c("tan","brown"),
+       ncol = 2)
 
 # Mean Deliberative Quality
 for(i in 1:length(run1l_agg$mean.dqual)){
@@ -232,6 +253,14 @@ for(i in 1:length(run1l$flips)){
     segments(i-1, run5g_agg$flips[i-1], i, run5g_agg$flips[i], col = "brown", lwd=2)
   }
 }
+legend(x = 20, y = 1.75, 
+       legend = c("Default Local","20% Leaders Local", "High Prop Local", 
+                  "0% Leaders Local", "70% Init. For Local",
+                  "Default Global","20% Leaders Global", "High Prop Global", 
+                  "0% Leaders Global", "70% Init. For Global"), 
+       fill = c("pink","lightblue","green","grey","tan",
+                "red","blue","darkgreen","black","brown"),
+       ncol = 2)
 
 # Tension each round
 for(i in 1:length(run1l$tension)){
@@ -279,3 +308,42 @@ plot(density(c(agents4gc$dprop, agents4gc_2$dprop, agents4gc_3$dprop, agents4gc_
 
 plot(density(c(agents5lc$dprop, agents5lc_2$dprop, agents5lc_3$dprop, agents5lc_4$dprop, agents5lc_5$dprop)))
 plot(density(c(agents5gc$dprop, agents5gc_2$dprop, agents5gc_3$dprop, agents5gc_4$dprop, agents5gc_5$dprop)))
+
+
+hist(c(agents1l$p.repsize, agents1l_2$p.repsize, agents1l_3$p.repsize, agents1l_4$p.repsize, agents1l_5$p.repsize),
+     main = "Initial For-Repertoire Size (Default Run / Local Vision Rule)")
+hist(c(agents1g$p.repsize, agents1g_2$p.repsize, agents1g_3$p.repsize, agents1g_4$p.repsize, agents1g_5$p.repsize),
+     main = "Initial For-Repertoire Size (Default Run / Global Vision Rule)")
+hist(c(agents1lc$p.repsize, agents1lc_2$p.repsize, agents1lc_3$p.repsize, agents1lc_4$p.repsize, agents1lc_5$p.repsize),
+     main = "For-Repertoire Size after 100 Rounds (Default Run / Local Vision Rule)")
+hist(c(agents1gc$p.repsize, agents1gc_2$p.repsize, agents1gc_3$p.repsize, agents1gc_4$p.repsize, agents1gc_5$p.repsize),
+     main = "For-Repertoire Size after 100 Rounds (Default Run / Global Vision Rule)")
+
+hist(c(agents2l$p.repsize, agents2l_2$p.repsize, agents2l_3$p.repsize, agents2l_4$p.repsize, agents2l_5$p.repsize),
+     main = "Initial For-Repertoire Size (20% Leaders / Local Vision Rule)")
+hist(c(agents2g$p.repsize, agents2g_2$p.repsize, agents2g_3$p.repsize, agents2g_4$p.repsize, agents2g_5$p.repsize),
+     main = "Initial For-Repertoire Size (20% Leaders / Global Vision Rule)")
+hist(c(agents2lc$p.repsize, agents2lc_2$p.repsize, agents2lc_3$p.repsize, agents2lc_4$p.repsize, agents2lc_5$p.repsize),
+     main = "For-Repertoire Size after 100 Rounds (20% Leaders / Local Vision Rule)")
+hist(c(agents2gc$p.repsize, agents2gc_2$p.repsize, agents2gc_3$p.repsize, agents2gc_4$p.repsize, agents2gc_5$p.repsize),
+     main = "For-Repertoire Size after 100 Rounds (20% Leaders / Global Vision Rule)")
+
+
+hist(c(agents1l$o.repsize, agents1l_2$o.repsize, agents1l_3$o.repsize, agents1l_4$o.repsize, agents1l_5$o.repsize),
+     main = "Initial Against-Repertoire Size (Default Run / Local Vision Rule)")
+hist(c(agents1g$o.repsize, agents1g_2$o.repsize, agents1g_3$o.repsize, agents1g_4$o.repsize, agents1g_5$o.repsize),
+     main = "Initial Against-Repertoire Size (Default Run / Global Vision Rule)")
+hist(c(agents1lc$o.repsize, agents1lc_2$o.repsize, agents1lc_3$o.repsize, agents1lc_4$o.repsize, agents1lc_5$o.repsize),
+     main = "Against-Repertoire Size after 100 Rounds (Default Run / Local Vision Rule)")
+hist(c(agents1gc$o.repsize, agents1gc_2$o.repsize, agents1gc_3$o.repsize, agents1gc_4$o.repsize, agents1gc_5$o.repsize),
+     main = "Against-Repertoire Size after 100 Rounds (Default Run / Global Vision Rule)")
+
+hist(c(agents2l$o.repsize, agents2l_2$o.repsize, agents2l_3$o.repsize, agents2l_4$o.repsize, agents2l_5$o.repsize),
+     main = "Initial Against-Repertoire Size (20% Leaders / Local Vision Rule)")
+hist(c(agents2g$o.repsize, agents2g_2$o.repsize, agents2g_3$o.repsize, agents2g_4$o.repsize, agents2g_5$o.repsize),
+     main = "Initial Against-Repertoire Size (20% Leaders / Global Vision Rule)")
+hist(c(agents2lc$o.repsize, agents2lc_2$o.repsize, agents2lc_3$o.repsize, agents2lc_4$o.repsize, agents2lc_5$o.repsize),
+     main = "Against-Repertoire Size after 100 Rounds (20% Leaders / Local Vision Rule)")
+hist(c(agents2gc$o.repsize, agents2gc_2$o.repsize, agents2gc_3$o.repsize, agents2gc_4$o.repsize, agents2gc_5$o.repsize),
+     main = "Against-Repertoire Size after 100 Rounds (20% Leaders / Global Vision Rule)")
+
