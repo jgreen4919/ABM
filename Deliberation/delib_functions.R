@@ -138,8 +138,7 @@ plotDelib <- function(title = "Deliberative Space", dat = agents, view = "positi
     p <- ggplot() + 
       # resize dots to grid
       geom_point(data = dat, 
-                 aes(x = x, y = y, color = position), 
-                 size = 100/sqrt(prod(dims)))
+                 aes(x = x, y = y, color = position, size = p.conf))
   }
   
   if(view == "dqual"){
