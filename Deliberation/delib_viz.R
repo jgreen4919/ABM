@@ -3,113 +3,43 @@ source("~/Desktop/ABM/Deliberation/delib_functions.R")
 setwd("~/Desktop/ABM/Deliberation/Viz")
 load("delib_runs.RData")
 
-plot(density(agents1l$dprop), main = "Initial Propensity to Deliberate (Local Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents1lc$dprop), main = "Propensity to Deliberate after 100 Rounds (Local Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents1g$dprop), main = "Initial Propensity to Deliberate (Global Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents1gc$dprop), main = "Propensity to Deliberate after 100 Rounds (Global Vision Rule)", xlab = "Value", ylab = "Density")
+plotDelib(title = "Initial Deliberative Space (Default Run / Local Vision Rule)", dat = agents1l, view = "p.repsize")
+plotDelib(title = "Deliberative Space after 100 Rounds (Default Run / Local Vision Rule)", dat = agents1lc, view = "p.repsize")
+plotDelib(title = "Initial Deliberative Space (Default Run / Global Vision Rule)", dat = agents1g, view = "p.repsize")
+plotDelib(title = "Deliberative Space after 100 Rounds (Default Run / Global Vision Rule)", dat = agents1gc, view = "p.repsize")
 
-plot(density(agents2l$dprop), main = "Initial Propensity to Deliberate (Local Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents2lc$dprop), main = "Propensity to Deliberate after 100 Rounds (Local Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents2g$dprop), main = "Initial Propensity to Deliberate (Global Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents2gc$dprop), main = "Propensity to Deliberate after 100 Rounds (Global Vision Rule)", xlab = "Value", ylab = "Density")
-
-plot(density(agents1l$dqual), main = "Initial Deliberative Skill (Local Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents1lc$dqual), main = "Deliberative Skill after 100 Rounds (Local Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents1g$dqual), main = "Initial Deliberative Skill (Global Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents1gc$dqual), main = "Deliberative Skill after 100 Rounds (Global Vision Rule)", xlab = "Value", ylab = "Density")
-
-plot(density(agents2l$dqual), main = "Initial Deliberative Skill (Local Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents2lc$dqual), main = "Deliberative Skill after 100 Rounds (Local Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents2g$dqual), main = "Initial Deliberative Skill (Global Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents2gc$dqual), main = "Deliberative Skill after 100 Rounds (Global Vision Rule)", xlab = "Value", ylab = "Density")
-
-plot(density(agents1l$p.conf), main = "Initial Position Confidence (Local Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents1lc$p.conf), main = "Position Confidence after 100 Rounds (Local Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents1g$p.conf), main = "Initial Position Confidence (Global Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents1gc$p.conf), main = "Position Confidence after 100 Rounds (Global Vision Rule)", xlab = "Value", ylab = "Density")
-
-plot(density(agents2l$p.conf), main = "Initial Position Confidence (Local Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents2lc$p.conf), main = "Position Confidence after 100 Rounds (Local Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents2g$p.conf), main = "Initial Position Confidence (Global Vision Rule)", xlab = "Value", ylab = "Density")
-plot(density(agents2gc$p.conf), main = "Position Confidence after 100 Rounds (Global Vision Rule)", xlab = "Value", ylab = "Density")
-
-plot(density(agents1l$o.repsize), main = "Initial Against-Repertoire Size (Local Vision Rule)", xlab = "Arguments in Against-Repertoire", ylab = "Density")
-plot(density(agents1lc$o.repsize), main = "Against-Repertoire Size after 100 Rounds (Local Vision Rule)", xlab = "Arguments in Against-Repertoire", ylab = "Density")
-plot(density(agents1g$o.repsize), main = "Initial Against-Repertoire Size (Global Vision Rule)", xlab = "Arguments in Against-Repertoire", ylab = "Density")
-plot(density(agents1gc$o.repsize), main = "Against-Repertoire Size after 100 Rounds (Global Vision Rule)", xlab = "Arguments in Against-Repertoire", ylab = "Density")
-
-plot(density(agents2l$o.repsize), main = "Initial Against-Repertoire Size (Local Vision Rule)", xlab = "Arguments in Against-Repertoire", ylab = "Density")
-plot(density(agents2lc$o.repsize), main = "Against-Repertoire Size after 100 Rounds (Local Vision Rule)", xlab = "Arguments in Against-Repertoire", ylab = "Density")
-plot(density(agents2g$o.repsize), main = "Initial Against-Repertoire Size (Global Vision Rule)", xlab = "Arguments in Against-Repertoire", ylab = "Density")
-plot(density(agents2gc$o.repsize), main = "Against-Repertoire Size after 100 Rounds (Global Vision Rule)", xlab = "Arguments in Against-Repertoire", ylab = "Density")
-
-plot(density(agents1l$p.repsize), main = "Initial For-Repertoire Size (Local Vision Rule)", xlab = "Arguments in For-Repertoire", ylab = "Density")
-plot(density(agents1lc$p.repsize), main = "For-Repertoire Size after 100 Rounds (Local Vision Rule)", xlab = "Arguments in For-Repertoire", ylab = "Density")
-plot(density(agents1g$p.repsize), main = "Initial For-Repertoire Size (Global Vision Rule)", xlab = "Arguments in For-Repertoire", ylab = "Density")
-plot(density(agents1gc$p.repsize), main = "For-Repertoire Size after 100 Rounds (Global Vision Rule)", xlab = "Arguments in For-Repertoire", ylab = "Density")
-
-plot(density(agents2l$p.repsize), main = "Initial For-Repertoire Size (Local Vision Rule)", xlab = "Arguments in For-Repertoire", ylab = "Density")
-plot(density(agents2lc$p.repsize), main = "For-Repertoire Size after 100 Rounds (Local Vision Rule)", xlab = "Arguments in For-Repertoire", ylab = "Density")
-plot(density(agents2g$p.repsize), main = "Initial For-Repertoire Size (Global Vision Rule)", xlab = "Arguments in For-Repertoire", ylab = "Density")
-plot(density(agents2gc$p.repsize), main = "For-Repertoire Size after 100 Rounds (Global Vision Rule)", xlab = "Arguments in For-Repertoire", ylab = "Density")
-
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1l, view = "p.repsize")
-plotDelib(title = "Deliberative Space after 100 Rounds (Local Vision Rule)", dat = agents1lc, view = "p.repsize")
-plotDelib(title = "Initial Deliberative Space (Global Vision Rule)", dat = agents1g, view = "p.repsize")
-plotDelib(title = "Deliberative Space after 100 Rounds (Global Vision Rule)", dat = agents1gc, view = "p.repsize")
-
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents2l, view = "p.repsize")
-plotDelib(title = "Deliberative Space after 100 Rounds (Local Vision Rule)", dat = agents2lc, view = "p.repsize")
-plotDelib(title = "Initial Deliberative Space (Global Vision Rule)", dat = agents2g, view = "p.repsize")
-plotDelib(title = "Deliberative Space after 100 Rounds (Global Vision Rule)", dat = agents2gc, view = "p.repsize")
+plotDelib(title = "Initial Deliberative Space (Default Run / Local Vision Rule)", dat = agents1l, view = "o.repsize")
+plotDelib(title = "Deliberative Space after 100 Rounds (Default Run / Local Vision Rule)", dat = agents1lc, view = "o.repsize")
+plotDelib(title = "Initial Deliberative Space (Default Run / Global Vision Rule)", dat = agents1g, view = "o.repsize")
+plotDelib(title = "Deliberative Space after 100 Rounds (Default Run / Global Vision Rule)", dat = agents1gc, view = "o.repsize")
 
 plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1l, view = "position")
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1lc, view = "position")
+plotDelib(title = "Deliberative Space After 100 Rounds (Default Run / Local Vision Rule)", dat = agents1lc, view = "position")
 table(agents1l$position)
 table(agents1lc$position)
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1g, view = "position")
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1gc, view = "position")
+plotDelib(title = "Initial Deliberative Space (Default Run / Global Vision Rule)", dat = agents1g, view = "position")
+plotDelib(title = "Deliberative Space After 100 Rounds (Default Run / Global Vision Rule)", dat = agents1gc, view = "position")
 table(agents1g$position)
 table(agents1gc$position)
 
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents2l, view = "position")
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents2lc, view = "position")
-table(agents2l$position)
-table(agents2lc$position)
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents2g, view = "position")
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents2gc, view = "position")
-table(agents2g$position)
-table(agents2gc$position)
+plotDelib(title = "Initial Deliberative Space (Unbalanced Run / Local Vision Rule)", dat = agents5l, view = "position")
+plotDelib(title = "Deliberative Space After 100 Rounds (Unbalanced Run / Local Vision Rule)", dat = agents5lc, view = "position")
+table(agents5l$position)
+table(agents5lc$position)
+plotDelib(title = "Initial Deliberative Space (Unbalanced Run / Global Vision Rule)", dat = agents5g, view = "position")
+plotDelib(title = "Deliberative Space After 100 Rounds (Unbalanced Run / Global Vision Rule)", dat = agents5gc, view = "position")
+table(agents5g$position)
+table(agents5gc$position)
 
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1l, view = "o.repsize")
-plotDelib(title = "Deliberative Space after 100 Rounds (Local Vision Rule)", dat = agents1lc, view = "o.repsize")
-plotDelib(title = "Initial Deliberative Space (Global Vision Rule)", dat = agents1g, view = "o.repsize")
-plotDelib(title = "Deliberative Space after 100 Rounds (Global Vision Rule)", dat = agents1gc, view = "o.repsize")
+plotDelib(title = "Initial Deliberative Space (Default Run / Local Vision Rule)", dat = agents1l, view = "dqual")
+plotDelib(title = "Deliberative Space after 100 Rounds (Default Run / Local Vision Rule)", dat = agents1lc, view = "dqual")
+plotDelib(title = "Initial Deliberative Space (Default Run / Global Vision Rule)", dat = agents1g, view = "dqual")
+plotDelib(title = "Deliberative Space after 100 Rounds (Default Run / Global Vision Rule)", dat = agents1gc, view = "dqual")
 
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents2l, view = "o.repsize")
-plotDelib(title = "Deliberative Space after 100 Rounds (Local Vision Rule)", dat = agents2lc, view = "o.repsize")
-plotDelib(title = "Initial Deliberative Space (Global Vision Rule)", dat = agents2g, view = "o.repsize")
-plotDelib(title = "Deliberative Space after 100 Rounds (Global Vision Rule)", dat = agents2gc, view = "o.repsize")
-
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1l, view = "dqual")
-plotDelib(title = "Deliberative Space after 100 Rounds (Local Vision Rule)", dat = agents1lc, view = "dqual")
-plotDelib(title = "Initial Deliberative Space (Global Vision Rule)", dat = agents1g, view = "dqual")
-plotDelib(title = "Deliberative Space after 100 Rounds (Global Vision Rule)", dat = agents1gc, view = "dqual")
-
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents2l, view = "dqual")
-plotDelib(title = "Deliberative Space after 100 Rounds (Local Vision Rule)", dat = agents2lc, view = "dqual")
-plotDelib(title = "Initial Deliberative Space (Global Vision Rule)", dat = agents2g, view = "dqual")
-plotDelib(title = "Deliberative Space after 100 Rounds (Global Vision Rule)", dat = agents2gc, view = "dqual")
-
-plotDelib(title = "Initial Deliberative Space (Local Vision Rule)", dat = agents1l, view = "dprop")
-plotDelib(title = "Deliberative Space after 100 Rounds (Local Vision Rule)", dat = agents1lc, view = "dprop")
-plotDelib(title = "Initial Deliberative Space (Global Vision Rule)", dat = agents1g, view = "dprop")
-plotDelib(title = "Deliberative Space after 100 Rounds (Global Vision Rule)", dat = agents1gc, view = "dprop")
-
-plotDelib(title = "Initial Deliberative Space (20% Leaders)", dat = agents2, view = "dprop")
-plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders)", dat = agents2c, view = "dprop")
-plotDelib(title = "Initial Deliberative Space (20% Leaders/High Prop+Polar)", dat = agents3, view = "dprop")
-plotDelib(title = "Deliberative Space after 100 Rounds (20% Leaders/High Prop+Polar)", dat = agents3c, view = "dprop")
+plotDelib(title = "Initial Deliberative Space (Default Run / Local Vision Rule)", dat = agents1l, view = "dprop")
+plotDelib(title = "Deliberative Space after 100 Rounds (Default Run / Local Vision Rule)", dat = agents1lc, view = "dprop")
+plotDelib(title = "Initial Deliberative Space (Default Run / Global Vision Rule)", dat = agents1g, view = "dprop")
+plotDelib(title = "Deliberative Space after 100 Rounds (Default Run / Global Vision Rule)", dat = agents1gc, view = "dprop")
 
 # Position Confidence
 for(i in 1:length(run1l$mean.pconf)){
@@ -329,6 +259,10 @@ legend(x = 0, y = .15,
                 "red","blue","darkgreen","black","brown"),
        ncol = 2)
 
+plot(density(c(agents1l$dprop, agents1l_2$dprop, agents1l_3$dprop, agents1l_4$dprop, agents1l_5$dprop)),
+     main = "Initial Deliberation Propensity (Default Run / Local Vision Rule)")
+plot(density(c(agents1g$dprop, agents1g_2$dprop, agents1g_3$dprop, agents1g_4$dprop, agents1g_5$dprop)),
+     main = "Initial Deliberation Propensity (Default Run / Global Vision Rule)")
 plot(density(c(agents1lc$dprop, agents1lc_2$dprop, agents1lc_3$dprop, agents1lc_4$dprop, agents1lc_5$dprop)),
      main = "Deliberation Propensity after 100 Rounds (Default Run / Local Vision Rule)")
 plot(density(c(agents1gc$dprop, agents1gc_2$dprop, agents1gc_3$dprop, agents1gc_4$dprop, agents1gc_5$dprop)),
